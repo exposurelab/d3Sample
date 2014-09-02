@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Get Data from DOM attribute</title>
+	
+	<style>
+		#csvData{
+			width: 200px;
+			height: 200px;
+		}
+		
+		#csvData{
+			width: 200px;
+			height: 200px;
+		}
+	</style>
+	
+	<!-- Loading d3.js -->
+	<script type="text/javascript" src="../d3/d3.js"></script>
+	
+	<script type="text/javascript">
+		
+		function csv2JSON(csv){		 
+			var lines=csv.split("\n");			 
+			var result = [];			 
+			var headers=lines[0].split(",");			 
+			
+			for(var i=1;i<lines.length;i++){			 
+				var obj = {};
+				var currentline=lines[i].split(",");
+			 
+				for(var j=0;j<headers.length;j++){
+					obj[headers[j]] = currentline[j];
+				}			 
+				result.push(obj);			 
+			}			  
+			//return result; //JavaScript object
+			return JSON.stringify(result); //JSON
+		}
+
+		function generateSVG() {
+			
+			var csvData = document.getElementById('csvData').value;
+			var dataItem = document.getElementById("csvValue").value;
+			
+			// check dataItem be set up!
+			if (!dataItem){
+				alert("Please input data item");
+				return 0;
+			}
+			
+			// get JSON data and convert to javascript Object
+			var dataset = JSON.parse(csv2JSON(csvData));
+
+			// set SVG width and Height
+			var w = 500, 
+				h = 100;
+				barPadding = 1;
+			
+			var svg = d3.select("body").append("svg")
+						.attr("width", w)
+						.attr("height", h);
+		
+			// set graphy properties
+			var rects = svg.selectAll("rect")
+							 .data(dataset)
+							 .enter()
+							 .append("rect")
+							 .attr("x", function(d, i){
+								return i * (w / dataset.length);
+							 })
+							 .attr("y", function(d){
+							 	return h - (parseFloat(d[dataItem]) * 4);
+							 })
+							 .attr("width", (w/dataset.length)-barPadding)
+							 .attr("height", function(d){
+							 	return parseFloat(d[dataItem])*4;
+							 })
+							 .attr("fill", function(d){
+							 	return "rgb(0, 0," + parseFloat(d[dataItem])*10 +")" ;
+							 });
+
+			// set text properties
+			svg.selectAll("text")
+				.data(dataset)
+				.enter()
+				.append("text")
+				.text(function(d){
+					return parseFloat(d[dataItem]);
+				})
+				.attr("text-anchor", "middle")
+				.attr("x", function(d, i){
+					return i * (w / dataset.length) + (w / dataset.length - barPadding) / 2;
+				})
+				.attr("y", function(d){
+				 	return h - (parseFloat(d[dataItem]) * 4) + 14;
+				})
+				.attr("font-family", "sans-serif")
+				.attr("font-size", "11px")
+				.attr("fill", "white")
+			
+			// add a space line
+			d3.select("body").append("br");
+		}
+
+		//window.onload = generateSVG;	
+	</script>
+</head>
+<body >
+	<div>
+		<p>Paste your csvData Below</p>
+		<textarea id="csvData"></textarea><br />
+		
+		<p>輸入要繪製的欄位</p>
+		<textarea id="csvValue"></textarea><br />
+		
+		<button onclick="generateSVG();">資料送出</p>	
+	</div>
+</body>
+</html>
