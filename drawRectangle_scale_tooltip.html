@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Get Data from DOM attribute</title>
+	
+	
+	<style>
+		body{
+			font-family: "Verdana", "微軟正黑體";
+			font-size: 16px;
+		}
+		textarea{
+			width: 500px;
+			height: 25px;
+			border: 2px solid #E85A5A;
+			border-radius: 8px;
+			overflow: hidden;	
+		}
+
+		#csvData{
+			height: 100px;
+			overflow: scroll;
+		}
+		
+		.button {
+			background-color:#fc8d83;
+			-moz-border-radius:26px;
+			-webkit-border-radius:26px;
+			border-radius:26px;
+			display:inline-block;
+			cursor:pointer;
+			color:#ffffff;
+			/*font-family:Verdana;*/
+			font-size:19px;
+			font-weight:bold;
+			padding:4px 27px;
+			text-decoration:none;
+		}
+		.button:hover {
+			background-color:#e4685d;
+		}
+		.button:active {
+			position:relative;
+			top:1px;
+		}
+	</style>
+	
+	<style>
+
+		.bar {
+		  fill: #febbbb;;
+		  margin-right: 5px;
+		}
+
+		.bar:hover {
+		  fill: brown;
+		}
+
+		.axis {
+		  fill: #FF0066; /*軸標籤顏色*/
+		  font: 10px sans-serif;
+		}
+
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: #FF0066; /*軸線顏色*/
+		  shape-rendering: crispEdges;
+		}
+
+		.x.axis path {
+		  display: none;
+		}
+
+		#tooltip {
+		    position: absolute;
+		    width: 200px;
+		    height: auto;
+		    padding: 10px;
+		    background-color: white;
+		    -webkit-border-radius: 10px;
+		    -moz-border-radius: 10px;
+		    border-radius: 10px;
+		    -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+		    -mox-box-shadow: 4px 4px 4px 10px rgba(0, 0, 0, 0.4);
+		    box-shadow: 4px 4px 10px rbga(0, 0, 0, 0.4) pointer-events: none;
+		}
+		
+		#tooltip.hidden {
+		    opacity: 0;
+		}
+		
+		#tooltip p {
+		    margin: 0;
+		    font-family: sans-serif;
+		    font-size: 16px;
+		    line-height: 20px;
+		}
+	</style>
+	
+	<!-- Loading d3.js -->
+	<script type="text/javascript" src="d3/d3.js"></script>
+	
+	<script type="text/javascript">	
+
+		function csv2JSON(csv){		 
+			var lines=csv.split("\n");			 
+			var result = [];			 
+			var headers=lines[0].split(",");			 
+			
+			for(var i=1;i<lines.length;i++){			 
+				var obj = {};
+				var currentline=lines[i].split(",");
+			 
+				for(var j=0;j<headers.length;j++){
+					obj[headers[j]] = currentline[j];
+				}			 
+				result.push(obj);			 
+			}			  
+			//return result; //JavaScript object
+			return JSON.stringify(result); //JSON
+		}
+
+		var layerList = {}; // layer container
+		layerList.layer = null;
+
+		function drawChart() {
+			
+			// Input Data Node
+			var csvData = document.getElementById('csvData').value;
+			var xLabel = document.getElementById('xLabel').value;
+			var yLabel = document.getElementById("yLabel").value;
+
+			// check yLabel be set up!
+			if (!xLabel){
+				alert("請輸入x軸欄位名稱");
+				return 0;
+			}
+
+			if (!yLabel){
+				alert("請輸入y軸欄位名稱");
+				return 0;
+			}
+			
+			// get JSON data and convert into javascript Object
+			var dataset = JSON.parse(csv2JSON(csvData));
+				
+			// set SVG width and Height
+			var margin = {top: 20, right: 10, bottom: 20, left: 40};
+
+			var width = 950 - margin.left - margin.right, 
+				height = 500 - margin.top - margin.bottom;
+			
+			// set input Scale and output Scale
+			xScale = d3.scale.ordinal()
+					.domain(dataset.map(function(d){
+						return d[xLabel];
+					}))
+					.rangeRoundBands([0, width], .2);		
+			
+			yScale = d3.scale.linear()
+					.domain([0, d3.max(dataset, function(d){ 
+						return d[yLabel]; })])
+					.range([height, 5]);
+
+			// set xAxis and yAxis properites
+			xAxis = d3.svg.axis()
+					.scale(xScale)
+					.orient("bottom");
+
+			yAxis = d3.svg.axis()
+					.scale(yScale)
+					.orient("left")
+					.ticks(10) ;		
+
+			// delete exit layer
+			if(layerList.layer){
+				d3.select("svg")
+					.transition()
+					.ease("bounce")
+					.remove();
+			}
+
+			// add SVG element
+			var svg = d3.select("body").append("svg")
+						.attr("width", width + margin.left + margin.right)
+						.attr("height", height + margin.top + margin.bottom)
+						.append("g")
+						.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+			// set graphy properties
+			var rects = svg.selectAll(".bar")
+							 .data(dataset)
+							 .enter()
+						   .append("rect")
+							 .attr("class", "bar")
+							 .attr("x", function(d){
+								return xScale(d[xLabel]);
+							 })
+							 .attr("y", function(d){
+							 	return yScale(parseFloat(d[yLabel]));
+							 })
+							 .attr("width", xScale.rangeBand())
+							 .attr("height", function(d){
+							 	return height - yScale(parseFloat(d[yLabel]));
+							 })
+						     .on("mouseover", function (d) {
+							    d3.select("#tooltip")
+							        .style("left", d3.event.pageX + "px")
+							        .style("top", d3.event.pageY + "px")
+							        .style("opacity", 1)
+							        .select("#value")
+							        .text(d[yLabel]);
+							})
+							 .on("mouseout", function () {
+							    // Hide the tooltip
+							    d3.select("#tooltip")
+							        .style("opacity", 0);;
+							});
+	
+			// draw axis
+			svg.append("g")
+				.attr("class", "x axis")
+				.attr("transform", "translate(0," + height + ")")
+				.call(xAxis);
+
+			svg.append("g")
+				.attr("class", "y axis")
+				.call(yAxis)
+			   .append("text")
+			   	.attr("transform", "rotate(-90)")
+			   	.attr("y", 6)
+			   	.attr("dy", ".71em")
+			   	.style("text-anchor", "end")
+			   	.text(yLabel);
+
+			// add a space line
+			d3.select("body").append("br");
+
+			// adding svg image to layerList
+			layerList.layer = svg;				
+			console.log(layerList);		   
+
+		}
+
+		//window.onload = generateSVG;	
+	</script>
+</head>
+<body >
+	<div class="container">
+		<p>Paste your csvData Below</p>
+		<textarea id="csvData"></textarea><br />
+		
+		<p>輸入x軸欄位名稱</p>
+		<textarea id="xLabel"></textarea><br /><br />
+
+		<p>輸入y軸欄位名稱</p>
+		<textarea id="yLabel"></textarea><br /><br />
+		
+		<a href="#" class="button" onclick="drawChart();">送出</a>
+
+		<div id="tooltip" class="hidden">
+		    <!-- <p><strong>Important Label Heading</strong></p> -->
+		    <p>數值： <span id="value">100</span></p>
+		</div>
+	</div>
+</body>
+</html>
