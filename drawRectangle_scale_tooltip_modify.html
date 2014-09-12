@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Get Data from DOM attribute</title>	
+	<!-- HTML Style -->
+	<style>
+		body{
+			font-family: "Verdana", "微軟正黑體";
+			font-size: 16px;
+		}
+		
+
+
+		textarea{			
+			width: 100%;
+			height: 25px;
+			border: 2px solid #E85A5A;
+			border-radius: 8px;
+			overflow: hidden;
+			margin-bottom: 20px;
+				
+		}
+
+		textarea.csvSample{				
+			width: 100%;
+			margin-bottom: 3px;
+			height: 300px;
+			
+		}
+
+		footer{			
+			width: 40%;			
+		}
+
+		.labelName{
+			display: block;
+			margin-top: 3px;
+			font-size: .8em;
+		}
+		
+		#xlabelName{
+			width: 49%;
+			float: left;
+			font-size: 1.5em;
+			color: red;
+		}
+
+
+		#xlabelName > span{
+			color: teal;
+		}
+		
+		#ylabelName{
+			width: 50%;
+			float: left;
+			font-size: 1.5em;
+			color: red;
+		}
+		
+
+
+		#ylabelName > span{
+			color: teal;
+		}
+
+		#csvData{
+			height: 100px;
+			overflow: scroll;
+		}
+		
+		.button {
+			background-color:#fc8d83;
+			-moz-border-radius:26px;
+			-webkit-border-radius:26px;
+			border-radius:26px;
+			display:inline-block;
+			cursor:pointer;
+			color:#ffffff;
+			/*font-family:Verdana;*/
+			font-size:19px;
+			font-weight:bold;
+			padding:4px 27px;
+			margin-top: 10px;
+			margin-left: 30px;
+			text-decoration:none;
+		}
+		.button:hover {
+			background-color:#e4685d;
+		}
+		.button:active {
+			position:relative;
+			top:3px;
+		}
+	</style>
+	
+	<!-- SVG Element style -->
+	<style>
+
+		.bar {
+		  fill: #febbbb;;
+		  margin-right: 5px;
+
+		}
+
+		.bar:hover {
+		  	fill: brown;
+		}
+
+		.axis {
+		  fill: #FF0066; /*軸標籤顏色*/
+		  font: .9em sans-serif;
+		  font-weight: bold;
+		  pointer-events: none;
+		}
+
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: #FF0066; /*軸線顏色*/
+		  shape-rendering: crispEdges;
+		  pointer-events: none;
+		}
+
+		.x.axis path {
+		  display: none;
+
+		}
+
+		#tooltip {
+		    position: absolute;
+		    width: 200px;
+		    height: auto;
+		    padding: 10px;
+		    background-color: white;
+		    -webkit-border-radius: 10px;
+		    -moz-border-radius: 10px;
+		    border-radius: 10px;
+		    -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+		    -mox-box-shadow: 4px 4px 4px 10px rgba(0, 0, 0, 0.4);
+		    box-shadow: 4px 4px 10px rbga(0, 0, 0, 0.4);
+		    pointer-events: none;
+		}
+		
+		#tooltip.hidden {
+		    opacity: 0;
+		}
+		
+		#tooltip p {
+		    margin: 0;
+		    font-family: sans-serif;
+		    font-size: 16px;
+		    line-height: 20px;
+		    pointer-events: none;
+		}
+	</style>
+	
+	<!-- Loading d3.js -->
+	<script type="text/javascript" src="d3/d3.js"></script>
+	
+	<script type="text/javascript">		
+		
+		function csv2JSON(csv){		 
+			var lines=csv.split("\n");			 
+			var result = [];			 
+			var headers=lines[0].split(",");			 
+			
+			for(var i=1;i<lines.length;i++){			 
+				var obj = {};
+				var currentline=lines[i].split(",");
+			 
+				for(var j=0;j<headers.length;j++){
+					obj[headers[j]] = currentline[j];
+				}			 
+				result.push(obj);			 
+			}			  
+			//return result; //JavaScript object
+			return JSON.stringify(result); //JSON
+		}
+
+		// Global variable
+		var layerList = {}; // layer container
+		layerList.layer = null;
+		var csvData;
+
+		function drawChart() {
+			
+			// Input Data						
+			var dataset = csvData;
+
+			var xLabel = d3.selectAll("input[name=xlabelName]")
+							.filter(function(){	if(this.checked){return this;}})
+							.property("value");
+			
+			var yLabel = d3.selectAll("input[name=ylabelName]")
+							.filter(function(){	if(this.checked){return this;}})
+							.property("value");
+			
+			// check Label be set up!
+			if (xLabel == "null"){
+				alert("請選擇x軸欄位");
+				return 0;
+			}
+			else if (yLabel == "null"){
+				alert("請選擇y軸欄位");
+				return 0;
+			}
+			else if (xLabel == yLabel){
+				alert("x欄與y欄相同，請重新選擇!")
+				return 0;
+			}
+			
+			// set SVG width and Height
+			var margin = {top: 20, right: 10, bottom: 20, left: 40};
+
+			var width = 950 - margin.left - margin.right, 
+				height = 500 - margin.top - margin.bottom;
+			
+			// set input Scale and output Scale
+			xScale = d3.scale.ordinal()
+					.domain(dataset.map(function(d){
+						return d[xLabel];
+					}))
+					.rangeRoundBands([0, width], .2);		
+			
+			yScale = d3.scale.linear()
+					.domain([0, d3.max(dataset, function(d){ 
+						return d[yLabel]; })])
+					.range([height, 5]);
+
+			// set xAxis and yAxis properites
+			xAxis = d3.svg.axis()
+					.scale(xScale)
+					.orient("bottom");
+
+			yAxis = d3.svg.axis()
+					.scale(yScale)
+					.orient("left")
+					.ticks(10) ;
+			
+			if (layerList.layer){
+				
+				// update rect 
+				d3.select("svg").selectAll(".bar")
+					.data(dataset)
+					.transition()
+					.attr("class", "bar")
+					.attr("x", function(d){
+						return xScale(d[xLabel]);
+					})
+			     	.attr("width", xScale.rangeBand())
+			     	.attr("y", function(d){
+						return yScale(parseFloat(d[yLabel]));
+					})					
+					.attr("height", function(d){
+						return height - yScale(parseFloat(d[yLabel]));
+					})					
+				
+				// update y axis label
+				d3.select("svg").selectAll(".y.axis")
+					.transition()
+					.call(yAxis)
+				  .selectAll("text[transform='rotate(-90)']")
+				   	.attr("transform", "rotate(-90)")
+				   	.attr("y", 6)
+				   	.attr("dy", ".71em")
+				   	.style("text-anchor", "end")
+				   	.text(yLabel)
+				   	.attr("transform", function(d) {
+	                	return "rotate(-90)" 
+	                });
+
+	            // update x axis label
+	            d3.select("svg").selectAll(".x.axis")
+					.transition()
+					.attr("transform", "translate(0," + height + ")")
+					.call(xAxis)
+				.selectAll("text")						
+					.attr("transform", function(d){
+						return "rotate(-90, 0, 0)";
+					});
+
+			}// end of update svg graph
+
+			else{
+				
+				// Create SVG element
+				var svg = d3.select("body").insert("svg", "div.container")
+							.attr("width", width + margin.left + margin.right)
+							.attr("height", height + margin.top + margin.bottom)
+							.append("g")
+							.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+				// set graphy properties
+				var rects = svg.selectAll(".bar")
+								 .data(dataset)
+								 .enter()
+							   .append("rect")
+								 .attr("class", "bar")
+								 .attr("x", function(d){
+									return xScale(d[xLabel]);
+								 })
+								 .attr("y", function(d){
+								 	return yScale(parseFloat(d[yLabel]));
+								 })
+								 .attr("width", xScale.rangeBand())
+								 .attr("height", function(d){
+								 	return height - yScale(parseFloat(d[yLabel]));
+								 })
+	
+				// Create Axis
+				svg.append("g")
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + height + ")")
+					.call(xAxis)
+				.selectAll("text")						
+					.attr("transform", function(d){
+						return "rotate(-90, 0, 0)";
+					});
+
+				svg.append("g")
+					.attr("class", "y axis")
+					.call(yAxis)
+				   .append("text")
+				   	.attr("transform", "rotate(-90)")
+				   	.attr("y", 6)
+				   	.attr("dy", ".71em")
+				   	.style("text-anchor", "end")
+				   	.text(yLabel)
+				   	.attr("transform", function(d) {
+	                	return "rotate(-90)" 
+	                });
+
+				// add svg graph to layerList
+				layerList.layer = svg;				
+
+			} // end of Create a new svg graph 
+
+
+			// add tooltip
+		   	d3.select("svg").selectAll(".bar")
+				.data(dataset)
+				.on("mouseover", function (d) {
+				    d3.select("#tooltip")
+				        .style("left", d3.event.pageX + "px")
+				        .style("top", d3.event.pageY + "px")
+				        .style("opacity", 1)
+				        .select("#value")
+				        .text(d[yLabel]);
+				})
+				.on("mouseout", function () {
+					// Hide the tooltip
+				    d3.select("#tooltip")
+				    .style("opacity", 0);;
+				});
+
+		}//End of drawChart()	
+		
+		window.onload = function(){
+			
+			d3.select("#csvData").on("change", function(){
+
+				// 1. Get csv data and convert to object
+				csvData = JSON.parse(csv2JSON(this.value));
+
+				var csvHead = Object.keys(csvData[0]);
+
+				// 2. Create x laber Name options
+				d3.select("#xlabelName").selectAll("label")				    
+					.data(csvHead)
+					.enter()
+				  .append("label")
+					.attr("class", "labelName")
+				    .text(function(head){
+				  		return head; 
+				  	})
+				  .append("input")
+				  	.attr("type", "radio")
+				  	.attr("name", "xlabelName")
+				  	.attr("value", function(head){
+				  		return head;
+				  	})
+
+				// 3. Create y laber Name options
+				d3.select("#ylabelName").selectAll("label")				    
+					.data(csvHead)
+					.enter()
+				  .append("label")
+					.attr("class", "labelName")
+				    .text(function(head){
+				  		return head; 
+				  	})
+				  .append("input")
+				  	.attr("type", "radio")
+				  	.attr("name", "ylabelName")
+				  	.attr("value", function(head){
+				  		return head;
+				  	});
+
+			});// End of csvData textarea onChange event			
+
+		};// End of window.onload	
+	</script>
+</head>
+<body >
+	<div class="container" >
+		
+		<div id="xlabelName"><span>請選擇x軸欄位</span></div>
+		
+		<div id="ylabelName"><span>請選擇y軸欄位</span><a href="#" class="button" onclick="drawChart();">畫圖</a></div>
+
+		<div id="tooltip" class="hidden">
+		    <!-- <p><strong>Important Label Heading</strong></p> -->
+		    <p>數值： <span id="value">100</span></p>
+		</div>
+		
+		
+	
+		<footer>
+			<h3>請將CSV資料貼於下面欄位</h3>
+			<textarea id="csvData"></textarea><br />
+			<h3>Sample Data</h3>	
+			<textarea class="csvSample">2008,12,縣市層級代碼,縣市層級名稱,鄉鎮層級代碼,鄉鎮層級名稱,性比例,戶量,人口密度,扶養比,扶幼比,扶老比,老化指數
+2008,12,10001,臺北縣,10001010,板橋市,98.86,2.9,25897.33,31.08,21.23,9.85,46.4
+2008,12,10001,臺北縣,10001020,三重市,100.43,2.9,21262.51,30.72,20.2,10.52,52.06
+2008,12,10001,臺北縣,10001030,中和市,98.65,2.8,21209.12,28.44,17.68,10.76,60.89
+2008,12,10001,臺北縣,10001040,永和市,92.93,2.7,38245.76,34.93,21.46,13.48,62.8
+2008,12,10001,臺北縣,10001050,新莊市,98.32,3,19248.24,30.43,23.6,6.83,28.96
+2008,12,10001,臺北縣,10001060,新店市,97.1,2.6,2415.8,31.35,18.24,13.11,71.85
+2008,12,10001,臺北縣,10001070,樹林市,102.56,3.1,5280.48,32.72,24.44,8.28,33.89
+2008,12,10001,臺北縣,10001080,鶯歌鎮,103.79,3.3,3939.33,34.85,25.42,9.43,37.08
+2008,12,10001,臺北縣,10001090,三峽鎮,105.9,3,517.46,40.08,28.22,11.86,42.03
+2008,12,10001,臺北縣,10001100,淡水鎮,96.06,2.6,1880.81,32.39,21.24,11.15,52.5
+2008,12,10001,臺北縣,10001110,汐止市,99.63,2.4,2557.14,29.06,19.32,9.74,50.41
+2008,12,10001,臺北縣,10001120,瑞芳鎮,105.29,2.8,601.86,40.23,19.26,20.96,108.84
+2008,12,10001,臺北縣,10001130,土城市,100.84,3,7971.76,29.08,22.12,6.97,31.49
+2008,12,10001,臺北縣,10001140,蘆洲市,98.71,3.1,25175.69,31.4,24.63,6.77,27.49
+2008,12,10001,臺北縣,10001150,五股鄉,103.69,3,2264.42,34.27,25.06,9.21,36.75
+2008,12,10001,臺北縣,10001160,泰山鄉,102.27,3,4193.86,31.94,24.57,7.36,29.97
+2008,12,10001,臺北縣,10001170,林口鄉,99.26,2.9,1361.48,39.68,30.7,8.97,29.23
+2008,12,10001,臺北縣,10001180,深坑鄉,103.41,2.7,1086.84,32.27,21.66,10.61,48.98
+2008,12,10001,臺北縣,10001190,石碇鄉,126.43,2.5,55.33,45.49,19.24,26.25,136.42
+2008,12,10001,臺北縣,10001200,坪林鄉,127.52,2.7,60.35,45.63,15.95,29.69,186.17
+2008,12,10001,臺北縣,10001210,三芝鄉,108.12,2.7,354.02,38.57,22.56,16.01,70.99
+2008,12,10001,臺北縣,10001220,石門鄉,113.92,3.2,231.51,41.77,22.83,18.95,83
+2008,12,10001,臺北縣,10001230,八里鄉,105.23,2.9,914.85,33.12,22.43,10.69,47.68
+2008,12,10001,臺北縣,10001240,平溪鄉,125.89,2.4,77.59,51.73,13.32,38.41,288.25
+2008,12,10001,臺北縣,10001250,雙溪鄉,118.28,2.6,47.93,50.62,16.52,34.1,206.37
+2008,12,10001,臺北縣,10001260,貢寮鄉,108.19,3.2,141.44,45.02,18.43,26.59,144.26
+2008,12,10001,臺北縣,10001270,金山鄉,103.17,3.4,468.72,39.99,23.33,16.66,71.4
+2008,12,10001,臺北縣,10001280,萬里鄉,105.7,3.1,334.34,40.71,20.72,19.99,96.49
+2008,12,10001,臺北縣,10001290,烏來鄉,103.93,3.4,16.8,36.1,24.15,11.95,49.5</textarea>
+		</footer>
+	</div>
+</body>
+</html>
