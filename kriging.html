@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+	<meta charset="UTF-8">
+	<title>d3.js Kriging</title>	
+	<style>
+		body{
+			margin: 0 auto;
+			width : 1024px;
+		}
+		
+		div#map{
+			width       : 800px;			
+			height      : 500px;
+			margin-top  : 1.5%;
+			margin-right: .5%;
+			float       : left;
+			
+			border               : 1px solid #999799;
+			-webkit-border-radius: 5px;
+			-moz-border-radius   : 5px;
+			border-radius        : 5px;
+		}
+	</style>
+</head>
+<body>			
+	<div id="map"></div>
+	
+	<!-- *******************  Loading javascript library ******************* -->
+	<!-- Load d3.js -->
+	<script type="text/javascript" src="js/d3.min.js"></script>
+	<!-- Load Leaflet.js -->
+	<script src="js/leaflet.js"></script>
+	<!-- Load topojson.js -->
+	<script src="js/topojson.v1.min.js"></script>	
+	<!-- Load numeral.js  need to before wendy.js-->
+	<script src="js/numeral.min.js"></script>
+	<!-- Load kriging.js -->
+	<script src="js/kriging.js"></script>
+	<!-- Load wendy.js -->
+	<script src="js/wendy.js"></script>
+	
+	<!-- main.js -->
+	<script>	
+	(function (){			
+		var csvJoinCsv = function (wendyCsv, userCsv, joinField, joinSingle, outputField, filter){
+			wendyCsv    = wendyCsv || false,
+			userCsv     = userCsv || false,
+			joinField   = joinField || "SiteName",
+			joinSingle  = joinSingle || false,
+			outputField = outputField || false,
+			filter      = filter || false;
+			
+			if(typeof userCsv == "string"){
+				userCsv = wendy.csv.parse(csv);
+			}
+			// clone new wendy csv object	
+			wendyCsv = JSON.parse(JSON.stringify(wendyCsv));		
+					
+			if(joinSingle){
+				for(var i=0, csvMax=userCsv.length; i<csvMax; i++)
+				{
+					// user csv join field
+					var uCsv_join_field = userCsv[i][joinField];
+					
+					// user csv output field
+					var uCsv_value = parseFloat(userCsv[i][outputField]);
+
+					// Filter value
+					if(typeof filter == "function"){
+						var uCsv_value = filter(uCsv_value);
+					}
+
+					// Join wendyCsv and UserCsv by join Field Name
+					for(j=0, wCsvMax=wendyCsv.length; j<wCsvMax; j+=1)
+					{
+						// From wendy csv get site Name
+						var wCsv_join_field = wendyCsv[j][joinField];
+
+						if(uCsv_join_field == wCsv_join_field){
+							// Copy csv data into json
+							wendyCsv[j][outputField] = uCsv_value;
+							break;
+						}
+					}
+				}
+			}else{			
+				// Create an array to storage user csv all field name
+				var uCsv_field_name_list = Object.keys(userCsv[0]);
+				
+				for(var i=0, uCsvMax=userCsv.length; i<uCsvMax; i+=1)
+				{
+					// user csv join field
+					var uCsv_join_field = userCsv[i][joinField];				
+					
+					// Join wendy csv and user csv by join Field Name
+					for(j=0, wCsvMax=wendyCsv.length; j<wCsvMax; j++)
+					{
+						// From wendy csv get site Name field
+						var wCsv_join_field = wendyCsv[j][joinField];
+						
+						if(uCsv_join_field == wCsv_join_field){						
+							
+							for(var k=0, fieldMax=uCsv_field_name_list.length; k<fieldMax; k++)
+							{								
+								if(uCsv_field_name_list[k] != joinField ){							
+								// Copy user csv data to wendy csv
+									wendyCsv[j][uCsv_field_name_list[k]]
+									 = userCsv[i][uCsv_field_name_list[k]];								
+								}							
+							}
+						}
+					}
+				}			
+			}
+
+			// return wendy csv object
+			return wendyCsv;
+		}; 
+
+		d3.csv("Data/csv/EPA_AirStation.csv", function (wendyCsv){
+			d3.csv("Data/csv/AQX_20140925180749.csv", function (userCsv){
+				// Define kriging variable
+				var t = [],
+					x = [],
+					y = [],
+					model = "exponential",
+					sigma2 = 0,
+					alpha = 100,
+					variogram;
+				
+				// join wendy csv and user csv by siteName
+				var csv = csvJoinCsv(wendyCsv, userCsv);				
+				
+				// Extract kriging variable from csv file
+				for(var i=0, max=csv.length; i<max; i+=1){
+					var lng = csv[i]["Lng"],
+						lat = csv[i]["Lat"],
+						value = csv[i]["PM10"];
+					x.push(lng);
+					y.push(lat);
+					t.push(value);
+				}
+				
+				// kriging train
+				variogram = kriging.train(t, x, y, model, sigma2, alpha);
+
+				// predict every grid value in taiwan grid topoShape
+				d3.json("Data/json/twGrid.topo.json", function (twGrid){
+					var twGrid = wendy.topo.parse(twGrid);
+
+					// add kriging predicted value into twGrid
+					for(var i=0, max=twGrid.length; i<max; i+=1){
+						var newX = twGrid[i]["properties"]["Lng"],
+							newY = twGrid[i]["properties"]["Lat"];
+						
+						twGrid[i]["properties"]["PM10"] 
+							= kriging.predict(newX, newY, variogram);
+					}
+
+					// plot grid
+					wendy.topo.plotMap(twGrid, "PM10");
+
+					
+				
+				});// End of loading twGrid json
+
+			});// End of loading user Csv 
+
+		});//End of loading wedny Csv		
+
+	}());// End of immediate function
+	</script>
+</body>
+</html>
