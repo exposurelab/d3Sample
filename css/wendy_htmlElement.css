@@ -1,0 +1,27 @@
+body{
+	font-family: "微軟正黑體";
+			
+}
+
+div.left.aligned.ui.icon.header{
+	padding-top   : 10px;
+	padding-bottom: 10px;
+}
+
+#WendyPanel{
+	margin-bottom: -.82em;
+}
+
+a.ui.large.label.button{
+	font-size: .5em;
+	font-weight: bolder;	
+}
+
+#map{
+	height: 600px;	
+}
+
+textarea{
+	margin-left: .5em;
+	margin-right: .5em;
+}

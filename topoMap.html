@@ -1,420 +1,163 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>d3.js geoJSON</title>	
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Wendy</title>
 	
-	<!-- Load Leaflet map css style -->
-	<link rel="stylesheet" href="css/leaflet.css" />
-	<!-- style html -->
-	<style type="text/css">
-		body{
-			width: 80%;
-			height: 100%;
-			margin: 0 auto;
-			font-family: "Helvetica", "Arial", "LiHei Pro", "文泉驛正黑", "微軟正黑體";
-		} 
+	<!-- Loading css style sheet -->
+	<link rel="stylesheet" href="css/bootstrap_grid.css">
+	<link rel="stylesheet" href="css/semantic.css">	
+	<link rel="stylesheet" href="css/leaflet.css">
+	<link rel="stylesheet" href="css/wendy_htmlElement.css">
 
-		div.LayerPanel{
-			margin-top: .4%;
-			left      : 51%;
-			position  : absolute;
-			float     : right;
-			overflow-x: hidden;
-			overflow-y: auto;
-			
-			width     : 400px;
-			height    : 500px;
-			
-			color     : #000000;
-			text-align: justify;
-			font-size : 18px;
-			
-			-webkit-border-radius: 4px 4px 4px 4px;
-			-moz-border-radius   : 4px 4px 4px 4px;
-			border-radius        : 4px 4px 4px 4px;
-			
-			
-			-moz-box-shadow      : 2px 2px 2px 2px rgba(97, 39, 39, 0.21);
-			-webkit-box-shadow   : 2px 2px 2px 2px rgba(97, 39, 39, 0.21);
-			box-shadow           : 2px 2px 2px 2px rgba(97, 39, 39, 0.21);
-			
-			background           : -webkit-linear-gradient(104deg, #FAFAFA 0%, #E3E2DC 100%);
-			background           : -moz-linear-gradient(104deg, #FAFAFA 0%, #E3E2DC 100%);
-			background           : -o-linear-gradient(104deg, #FAFAFA 0%, #E3E2DC 100%);
-			background           : -ms-linear-gradient(104deg, #FAFAFA 0%, #E3E2DC 100%);
-			background           : linear-gradient(194deg, #FAFAFA 0%, #E3E2DC 100%);
-			
-			transform        :scale(1);
-			-ms-transform    :scale(1);
-			-moz-transform   :scale(1);
-			-webkit-transform:scale(1);
-			-o-transform     :scale(1);
-		}
-		
-		h3{
-			padding      : 0px 0px 8px 0px;
-			border-bottom: 2px solid #FFF;
-			text-align   : center;
-		}
-		
-		.wendyYear li{
-			display        : inline-block;
-			list-style-type: none;
-			left: 0%;
-		}
 
-		.wendyVariable li{
-			list-style-type: none;
-			padding-bottom: 10px;
-		}
-		
-		div#map{
-			width       : 50%;			
-			height      : 500px;
-			margin-top  : .5%;
-			margin-right: .5%;
-			float       : left;
-			
-			border               : 1px solid #999799;
-			-webkit-border-radius: 5px;
-			-moz-border-radius   : 5px;
-			border-radius        : 5px;
-		}
-		
-		div.input{
-			width: 50%;
-			margin-top: .5%;
-			float: left;
+	<!-- Loading js library -->
+	<script src="js/jquery/jquery-1.11.1.js"></script>
+	<script src="js/jquery/jquery-migrate-1.2.1.min.js"></script>
+	<script src="js/d3/d3.min.js"></script>
+	<script src="js/d3/topojson.v1.min.js"></script>
+	<script src="js/numeral/numeral.min.js"></script>
+	<script src="js/interpolation/kriging.js"></script>
+	<script src="js/map/leaflet.js"></script>
+	<script src="js/wendy/wendy.js"></script>
+	<script src="js/wendy/wendy_init.js"></script>
 
-			border: 1px solid #999799;
-			-webkit-border-radius: 5px;
-			-moz-border-radius: 5px;
-			border-radius: 5px;
-		}
-
-		textarea{
-			width: 100%;
-			margin-bottom: .5%;
-			border: 0
-		}
-	</style>
-
-	<!-- style Legend -->
-	<style type="text/css">
-		h3.legendTitle{
-			font-size    : 1em;
-			text-align   : left;
-			border-bottom: hidden;
-			padding      : 0px 0px 0px 0px;
-		}
-
-		.legend {
-		    padding: 0 0 0 1.5em;
-		}
-
-		li.key {
-		    display: inline-block;
-		    border-top-width: 15px;
-		    border-top-style: solid;
-		    font-size: .75em;
-		    width: 6%;
-		    padding-left: 0;
-		    padding-right: 0;
-		}
-	</style>
-
-	<!-- style scroll bar -->
-	<style>
-		/* Let's get this party started */
-		::-webkit-scrollbar {
-		    width: 12px;
-		}
-		 
-		/* Track */
-		::-webkit-scrollbar-track {
-		    -webkit-box-shadow: inset 0 0 6px #FEDFEF; 
-		    -webkit-border-radius: 10px;
-		    border-radius: 10px;
-		}
-		 
-		/* Handle */
-		::-webkit-scrollbar-thumb {
-		    -webkit-border-radius: 10px;
-		    border-radius: 10px;
-		    background: #FEDFEF; 
-		    -webkit-box-shadow: inset 0 0 6px #FEDFEF; 
-		}
-		::-webkit-scrollbar-thumb:window-inactive {
-			background: #FEDFEF; 
-		}
-	</style>
-
-	<!--  button -->
-	<style type="text/css">
-		#remove {
-			-moz-box-shadow:inset 0px 1px 0px -1px #d197fe;
-			-webkit-box-shadow:inset 0px 1px 0px -1px #d197fe;
-			box-shadow:inset 0px 1px 0px -1px #d197fe;
-			background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #9027e6), color-stop(1, #550b91) );
-			background:-moz-linear-gradient( center top, #9027e6 5%, #550b91 100% );
-			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#9027e6', endColorstr='#550b91');
-			background-color:#9027e6;
-			-webkit-border-top-left-radius:42px;
-			-moz-border-radius-topleft:42px;
-			border-top-left-radius:42px;
-			-webkit-border-top-right-radius:42px;
-			-moz-border-radius-topright:42px;
-			border-top-right-radius:42px;
-			-webkit-border-bottom-right-radius:42px;
-			-moz-border-radius-bottomright:42px;
-			border-bottom-right-radius:42px;
-			-webkit-border-bottom-left-radius:42px;
-			-moz-border-radius-bottomleft:42px;
-			border-bottom-left-radius:42px;
-			text-indent:0px;
-			border:1px solid #7b28bf;
-			display:inline-block;
-			color:#ffffff;
-			font-family:Comic Sans MS;
-			font-size:20px;
-			font-weight:bold;
-			font-style:normal;
-			height:40px;
-			line-height:40px;
-			width:131px;
-			text-decoration:none;
-			text-align:center;
-			text-shadow:1px 2px 0px #8a17e8;
-		}
-		#remove:hover {
-			background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #550b91), color-stop(1, #9027e6) );
-			background:-moz-linear-gradient( center top, #550b91 5%, #9027e6 100% );
-			filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#550b91', endColorstr='#9027e6');
-			background-color:#550b91;
-		}
-		#remove:active {
-			position:relative;
-			top:1px;
-		}
-	</style>
-	
-	<!-- style legend -->
-	<style>
-	.legend {
-	    line-height: 18px;
-	    color: #555;
-	}
-	
-	.legend i {
-	    width: 18px;
-	    height: 18px;
-	    float: left;
-	    margin-right: 8px;
-	    opacity: 0.7;
-	}
-	</style>
 </head>
-<body>			
-	<div class="LayerPanel">		
-		<div class="checkbox">		
-			<label>
-				<input type="checkbox" name="wendyMapToggle" id="wendyMapToggle">
-				內建圖層
-			</label>
-			<label for="wendyMapToggle"></label>							
-		</div>		
-		<div class="wendyData">
-			<h4>Step1: 請選擇資料種類</h4>
-			<label>
-				<input type="radio" name="DataCategory" value="pop_index">
-				<label></label>
-				人口指標
-			</label>
-			<label>
-				<input type="radio" name="DataCategory" value="edu_index">
-				<label></label>
-				教育指標
-			</label>
-			<label>
-				<input type="radio" name="DataCategory" value="low_income">
-				<label></label>
-				低收入戶數
-			</label>
+<body>
+<div class="container-fluid">
+	<div id="ToolMenu" class="row">		
+		<div class="col-md-12">			
+			<div class="large left aligned ui icon header">				
+				<a id="ListLayer" class="ui large black label button">
+					<i class="list layout icon"></i>圖層清單
+				</a>
+				
+				<a id="AddTable" class="ui large black label button">
+					<i class="add sign box icon"></i>新增屬性
+				</a>
+
+				<a id="AddTopo" class="ui large black label button">
+					<i class="add sign box icon"></i>新增向量
+				</a>
+				
+				<a id="Choropleth" class="ui large black label button">
+					<i class="photo icon"></i>畫面量圖
+				</a>
+				
+				<a id="Kriging" class="ui large black label button">
+					<i class="photos basic icon"></i>畫內插圖
+				</a>
+				
+				<a id="Analysis" class="ui large black label button">
+					<i class="wrench icon"></i>分析圖層
+				</a>	
+			</div>
 		</div>
-		<div class="wendyYear">
-			<h4>Step2: 請選擇資料年分</h4>
-			<ul>
-				<li>
-					<label>				
-						<input type="radio" name="year" value="2008">
-						<label></label>
-						2008
-					</label>
-				</li>
-				<li>
-					<label>
-						<input type="radio" name="year" value="2009">
-						<label ></label>
-						2009
-					</label>
-				</li>
-				<li>
-					<label>
-						<input type="radio" name="year" value="2010">
-						<label></label>
-						2010
-					</label>
-				</li>
-				<li>
-					<label>
-						<input type="radio" name="year" value="2011">
-						<label></label>
-						2011
-					</label>
-				</li>
-			</ul>
+	</div>
+	
+	<div class="row">		
+		<!-- Panels -->
+		<div id="Panels" class="col-md-3">
+			<div id="ListLayerPanel">
+				<div id="WendyPanel" class="row">
+					<div class="ui small inverted teal block header LayerHeader">
+						內建圖層
+					</div>
+
+					<div class="ui fluid list LayerMenu">
+						<div class="header"><i class="tags icon"></i>面量圖</div>				
+						<div class="ui fluid selection list">
+							<div id="popIndex" class="item">人口指標</div>
+							<div id="eduIndex" class="item">教育指標</div>
+							<div id="lowIncome" class="item">低收入戶</div>
+						</div>					
+						
+						<div class="header"><i class="tags icon"></i>內插圖</div>
+						<div class="ui fluid selection list">
+							<div id="pm25" class="item">
+								即時細微粒PM2.5濃度分布圖
+							</div>
+							
+							<div id="temperature" class="item">即時溫度分布圖</div>
+						</div>					
+					</div>
+				</div>
+
+				<div id="UserPanel" class="row">
+					<div class="ui small inverted teal block header LayerHeader">
+						使用者圖層
+					</div>
+					<div class="ui fluid selection list LayerMenu">
+						<div class="header"><i class="tags icon"></i>面量圖</div>				
+						<div class="ui fluid selection list">
+							
+						</div>			
+						
+						<div class="header"><i class="tags icon"></i>內插圖</div>
+						<div class="ui fluid selection list">
+							
+						</div>	
+					</div>
+				</div>
+			</div>
+			
+			<div id="AddTablePanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					新增屬性資料
+				</div>
+				
+				<div class="ui fluid list LayerMenu">
+					<div class="header"><i class="tags icon"></i>
+						1. 請選擇輸入的資料類型
+					</div>				
+					
+					<div class="ui fluid selection list">
+						<div class="item">人口指標</div>
+						<div class="item">教育指標</div>						
+					</div>	
+				
+					<div class="header"><i class="tags icon"></i>
+						2. 在下方欄位中貼上資料
+					</div>
+					<textarea></textarea>
+
+					
+				</div>
+			</div>
+
+			<div id="AddTopoPanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					新增向量資料
+				</div>
+			</div>
+
+			<div id="ChoroplethPanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					面量圖繪製選項
+				</div>
+			</div>
+
+			<div id="KrigingPanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					內插圖繪製選項
+				</div>
+			</div>
+
+			<div id="AnalysisPanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					分析工具
+				</div>
+			</div>
 		</div>
-		<div class="wendyVariable">
-			<h4>Step3: 請選擇資料變項</h4>
+
+		<!-- Map -->
+		<div id="map" class="col-md-9">
+			<svg></svg>
 		</div>
-		<a href="#" id="remove">remove</a>
+	
 	</div>
 
-	<!-- <textarea name="jsonData" id="jsonData"></textarea>	 -->
-	<div id="map"></div>
-	<div class="input">
-		<textarea name="topojson"></textarea>	
-		<button name="parse">解析</button>
-	</div>	
-	
-	<!-- *******************  Loading javascript library ******************* -->
-	<!-- Load d3.js -->
-	<script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.4.11/d3.min.js"></script>
-	<!-- Load Leaflet.js -->
-	<script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
-	<!-- Load topojson.js -->
-	<script src="http://cdnjs.cloudflare.com/ajax/libs/topojson/1.1.0/topojson.min.js"></script>	
-	<!-- Load number.js  need to before wendy.js-->
-	<script src="http://cdnjs.cloudflare.com/ajax/libs/numeral.js/1.5.3/numeral.min.js"></script>
-	<!-- Load wendy.js -->
-	<script src="js/wendy.js"></script>
-	
-	<!-- main.js -->
-	<script>	
-	(function (){			
-		// Define local variable and wendy library module
-		var csv = wendy.csv,
-			topo= wendy.topo;
-			
-		var dataCategory,
-			year, 
-			field;
-
-		// Initialize Leaflet
-		var map = new L.map('map').setView([23.978567, 120.9579531], 7)
-						.addLayer(new L.tileLayer('http://{s}.tiles.mapbox.com/v3/verzonzoon.jdpd6545/{z}/{x}/{y}.png', { 
-							attribution: '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a>', 
-							maxZoom: 18}));						
-		
-		// default: trun off Build-in Layer options
-		d3.select(".LayerPanel").selectAll("div[class*=wendy]").style("display", "none");
-
-		// set Layer switch for Build-in Layer options
-		d3.select("#wendyMapToggle").on("click", function(){
-			// wendyMapToggle turn on 
-			if(this.checked){				
-				d3.select(".LayerPanel").selectAll("div[class*=wendy]").style("display", "block");
-					
-			}else{
-				d3.select(".LayerPanel").selectAll("div[class*=wendy]").style("display", "none");
-			}
-		});
-				
-		// get user select field info
-		d3.select(".wendyData").selectAll("input").on("change", function(){
-			dataCategory = this.value || "pop_index";
-			
-			if(typeof year !== "undefined"){				
-				
-				// delete variable field options (if existing)
-				d3.select(".wendyVariable").selectAll("ul").remove();
-
-				// remove existing layer
-				wendy.graph.removeAll();
-			
-				// show wendy csv data variables field options
-				wendy.node.showCsvField(dataCategory, year, ".wendyVariable", map);
-			}
-			
-			// show csv field options
-			d3.select(".wendyYear").selectAll("input").on("change", function(){			
-				year = this.value || 2008;
-				
-				// delete variable field options (if existing)
-				d3.select(".wendyVariable").selectAll("ul").remove();				
-				
-				// show wendy csv data variables field options
-				d3.csv(csv.getWendyUrl(dataCategory, year), function (csvData){
-					var parent = d3.select(".wendyVariable").append("ul");
-					var header = Object.keys(csvData[0]);					
-					
-					// add variables options in div(class="wendyVariable") 
-					for(var i=0, max=header.length; i<max; i+=1){
-						var textNode = document.createTextNode(header[i]);
-						if (header[i]!=="COUNTYNAME"){							
-							// add li tag and radio button
-							parent.append("li")
-							  .append("label")
-							  	.append("input").attr("type", "radio")
-							  	.attr("name", "variables")
-							  	.attr("value", header[i]);							
-							// add new label tag and text node
-							parent.select("li:last-child").select("label")
-								.insert("label")
-							  .node().parentNode
-							    .appendChild(textNode);
-						}
-					}
-
-					// (1)get output field info and (2)plot map graph
-					d3.select(".wendyVariable").selectAll("input").on("change", function(){
-						// remove existing layer
-						wendy.graph.removeAll();
-
-						field = this.value;
-						// Load topojson and plot map graph;
-						d3.json(wendy.topo.getWendyUrl("taiwan"), function(topoShape){
-							// parse topojson to array object (topo Shape)
-							var shape = topo.parse(topoShape);
-							
-							// topo shape join csv data
-							var csvShape = topo.joinCsv({
-								csv        : csvData,
-								topo       : shape,
-								joinField  : "COUNTYNAME",
-								joinSingle : true,
-								outputField: field								
-							});
-							console.log(csvShape);
-							// plot map graph
-							wendy.topo.plotOnLeaflet(map, csvShape, field);
-
-						});//End of load topojson and plot map graph
-						
-					});// End of select output field		
-				
-				});// End of csv load callback
-			});// End of .wendyYear onchange event	
-		});// End of .wendyData onchange event
-		
-		d3.select("#remove").on("click", function(){
-			wendy.graph.removeAll();
-		});
-
-
-	}());// End of immediate function
-	</script>
-
+</div><!-- End of Layerout -->
 </body>
 </html>
