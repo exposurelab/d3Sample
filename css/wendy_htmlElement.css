@@ -1,5 +1,5 @@
 body{
-	font-family: "微軟正黑體";
+	font-family: '文泉驛微米黑', 'LiHei Pro', '微軟正黑體', sans-serif;
 			
 }
 
@@ -18,10 +18,29 @@ a.ui.large.label.button{
 }
 
 #map{
-	height: 600px;	
+	height: 500px;	
 }
 
 textarea{
 	margin-left: .5em;
 	margin-right: .5em;
+}
+
+/* Progress Bar */
+#ProgressBar div.bar{
+	color: white;
+}
+
+/* Leaflet Map Legend */
+.legend {
+    line-height: 18px;
+    color: #555;    
+}
+
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
 }

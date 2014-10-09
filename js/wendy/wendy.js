@@ -14,7 +14,7 @@
 	wendy.csv     = {};
 	wendy.topo    = {};
 	wendy.url     = {};
-	wendy.node    = {};	
+	wendy.plot    = {};	
 
 	// graph's storage
 	wendy.graph = {
@@ -376,24 +376,20 @@
 	};
 	
 	//  .from wendy
-	wendy.csv.getWendyUrl = function (variable, year){
+	wendy.csv.getChoroplethUrl = function (table){
 		/*
-		 * @variable 
+		 * @table 
 		 *  .type: string
 		 *  .content: data category;
 		 *
-		 * @year 
-		 *  .type: string
-		 *  .content: data year
-		 * 
 		 * @return value
 		 *  .type: string
 		 *  .content: csv file url 
 		 */
-		return "Data/csv/" + variable + '/' + year + '.csv';
+		return "Data/csv/choropleth/" + table + '_2011.csv';
 	};
 
-	wendy.topo.getWendyUrl = function (name){		
+	wendy.topo.getTopoUrl = function (name){		
 		/*
 		 * @name 
 		 *  .type: string
@@ -1112,9 +1108,163 @@
 	
 	}; // End of wendy.topo.plotOnLeaflet()
 
+	wendy.graph.plotChoropleth = function (L_map, topo, outputField, nClass, colorSelector){
+
+		// Define reference wendy module
+		var topoShape = wendy.topo;
+		var dataset = wendy.dataset;
+
+		// initialize and check argument
+		var L_map		  = L_map || false,
+			topo          = topo || false,
+			outputField	  = outputField || false,  
+			nClass        = nClass || 5,
+			colorSelector = colorSelector || "YlOrRd";
+	
+		if(!L_map){
+			throw new Error("wendy.plot.topoMap Error:\n" + 
+							"please input Leaflet map Object! \n" +
+							"type is 'object'");
+			return 0;
+		}
+
+		if(!topo){
+			throw new Error("wendy.plot.topoMap Error:\n" + 
+							"please input topojson or topo Object! \n" +
+							"type is 'topojson' or 'object'");
+			return 0;
+		}
+
+		if(!outputField){
+			throw new Error("wendy.plot.topoMap Error:\n" + 
+							"please input output field name! \n"+
+							"type is 'string'");
+			return 0;
+		}
+		
+		// Add a svg to Leaflet's overlay pane
+		var svg = d3.select(L_map.getPanes().overlayPane).append("svg")
+					.attr("name", outputField),
+			g   = svg.append("g")
+					 .attr("class", "leaflet-zoom-hide");
+
+		// Adapt Leaflet’s API to fit D3 by implementing
+		// a custom geometric transformation
+		function projectPoint(x, y) {
+		  var point = L_map.latLngToLayerPoint(new L.LatLng(y, x));
+		  this.stream.point(point.x, point.y);
+		}		
+
+		var projection = d3.geo.transform({point: projectPoint}),
+			path 	   = d3.geo.path().projection(projection);
+
+		// Create path elements for each of the features by using D3
+		var features = g.selectAll("path")
+    					.data(topo)
+  						.enter()
+  						.append("path");
+  		
+  		// Create color		
+  		var valueList = topoShape.property(topo, outputField, function (value, dataset){
+  			if(!isNaN(value)){
+  				dataset.push(value);
+  			}
+  		});  		
+		
+		var color = d3.scale.quantize()
+					.domain(dataset.quantile(valueList))
+					.range(wendy.color.brewer[colorSelector][nClass]);
+
+		// configure svg graph color and outline
+		features.attr("d", path)		
+				.attr("fill", function(topoShape){
+					var value = topoShape.properties[outputField];
+					if(value){					
+						return color(value);				
+					}else{					
+						//行政區沒有數值，使用灰色表示 
+						return "#d3d3d3";
+					}
+				})
+				.attr("fill-opacity", 1)
+				.attr("stroke", "gray")
+				.attr("stroke-width", ".5")
+				.on("mouseover", function (d){
+					// set css style
+					d3.select(this)
+						.attr("stroke-width", 3)
+						.attr("stroke", "#333333");					
+					
+					// show info
+					d3.select("#map").append("div")
+						.classed("choroplethInfo", true)
+						.style({
+							"width"     : "15%",
+							"position"  : "absolute",
+							"right"     : "0",							
+							"border"    : "solid .5px gray",
+							"text-align": "center",
+							"background-color": "white",
+							"opacity": ".7"
+						})
+					  .append("h3")
+						.text(d.properties["COUNTYNAME"] + "-" + outputField);
+					
+					d3.select("#map").select("div.choroplethInfo")
+					  .append("p")
+					  	.style("color", "red")
+					  	.style("font-size", "1.5em")
+					  	.text(d.properties[outputField]);
+				})
+				.on("mouseout", function (d){
+					// recover css style
+					d3.select(this)
+						.attr("stroke", "gray")
+						.attr("stroke-width", ".5");
+
+					// remove info
+					d3.select("#map")
+						.selectAll("div.choroplethInfo")
+						.remove();	
+				});
+
+  		// Part-II. Fitting SVG to a Layer
+  		// Computing the projected bounding box of features by
+  		// using custom transform to convert the longitude and latitude to pixels
+		L_map.on('viewreset', reset);
+		reset();
+
+		function reset(){
+			var bounds      = path.bounds({
+											type: "FeatureCollection",
+											features: topo
+										  }),
+				topLeft     = bounds[0],
+				bottomRight = bounds[1];
+
+			// adjust svg position
+			svg .attr("width", bottomRight[0] - topLeft[0])
+			    .attr("height", bottomRight[1] - topLeft[1])
+			    .style("left", topLeft[0] + "px")
+			    .style("top", topLeft[1] + "px");
+
+			g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
+
+			//  resize svg graph
+			features.attr("d", path);
+		}
+
+		// add legend
+		wendy.graph.legend(L_map, outputField, dataset.quantile(valueList), color);
+	
+	}; // End of wendy.topo.plotOnLeaflet()
+
 	wendy.graph.legend = function(L_map, outputField, quantileDataset, color){
-		// remove existing legend
-		var legend = d3.select("div[class='info legend leaflet-control']");
+		// hide existing legend
+		var legend = d3.select("#map")
+					   .select("div.leaflet-control-container")
+					   .select("div.leaflet-bottom.leaflet-right")
+					   .select("div.info.legend.leaflet-control");		
 		if(legend){	legend.remove();}
 
 		// refer new legend object
@@ -1122,10 +1272,12 @@
 
 		legend.onAdd = function (L_map) {
 		    var div = L.DomUtil.create('div', 'info legend'),
-		        grades = quantileDataset;
+		        grades = quantileDataset,
 		        labels = [];
-				
-
+		    
+		    // add name attribut to lengend Node
+		    d3.select(div).attr("name", outputField);		    
+		    
 		    // loop through our density intervals and generate a label with a colored square for each interval
 		    var star, stop;
 		    div.innerHTML = "<h3 class='legendTitle'>" + outputField + "</h3>";
@@ -1143,7 +1295,55 @@
 		legend.addTo(L_map);
 	};
 
-	wendy.graph.removeAll = function(){
+	wendy.graph.show = function (nodeName){
+		// show svg
+		var svgNode = "svg[name='"+ nodeName +"']";
+		d3.select("#map")
+			.select(".leaflet-map-pane")
+			.select(".leaflet-objects-pane")
+			.select(".leaflet-overlay-pane")
+			.select(svgNode)
+			.style("opacity", 1);
+
+		// show legend
+		var legendNode = "div[name='"+ nodeName +"']";
+		d3.select("#map")
+		   .select(".leaflet-control-container")
+		   .select(".leaflet-bottom.leaflet-right")
+		   .select(legendNode)
+		   .style("display", "inline");
+
+	};
+
+	wendy.graph.hide = function (nodeName){
+		// hide svg
+		var selector = "svg[name='"+ nodeName +"']";
+		d3.select("#map")
+			.select(".leaflet-map-pane")
+			.select(".leaflet-objects-pane")
+			.select(".leaflet-overlay-pane")
+			.select(selector)
+			.style("opacity", 0);
+
+		// hide legend
+		d3.select("#map")
+		   .select("div.leaflet-control-container")
+		   .select("div.leaflet-bottom.leaflet-right")
+		   .selectAll("div.info.legend.leaflet-control")
+		   .style("display", "none");
+
+	}; 
+	
+	wendy.graph.removeByClass = function (className){
+		d3.select("#map")
+			.select(".leaflet-map-pane")
+			.select(".leaflet-objects-pane")
+			.select(".leaflet-overlay-pane")
+			.select("svg." + className)
+			.remove();
+	} 
+
+	wendy.graph.removeAll = function (){
 		// remove existing overlay svg
 		d3.select("#map")
 			.select(".leaflet-map-pane")
@@ -1155,83 +1355,6 @@
 		// remove existing legend
 		var legend = d3.select("div[class='info legend leaflet-control']");
 		if(legend){	legend.remove();}
-
-	}
-
-	wendy.node.showCsvField = function(dataType, dataYear, ContainerNode, L_map){
-		/**
- 		 * @dataType
-		 *  .type   : String
-		 *  .content: data type which wanted to be plotting
-		 *
-		 * @dataYear
-		 *  .type   : string
-		 *  .content: data which wanted to be plotting year value
-		 *
-		 * @ContainerNode
-		 *  .type   : string
-		 *  .content: a node selector which csv field options will show in it
-		 *
-		 * @L_map
-		 *  .type   : object
-		 *  .content: Leaflet map Object		 
-		 *
-		 * @return value
-		 *  .content: - no return value
-		 *			  - ContainerNode will show csv field options
-		 **/
-
-		// show wendy csv data variables field options
-		var csv = wendy.csv,
-			topo= wendy.topo;
-
-		d3.csv(csv.getWendyUrl(dataType, dataYear), function (csvData){
-			// Define wendy child module as local variable
-		    var parent = d3.select(ContainerNode).append("ul"),
-		        header = Object.keys(csvData[0]);
-
-			
-			// add variables options in div(class="wendyVariable") 
-			for(var i=0, max=header.length; i<max; i+=1){
-				var textNode = document.createTextNode(header[i]);
-				if (header[i]!=="COUNTYNAME"){							
-					// add li tag and radio button
-					parent.append("li")
-					  .append("label")
-					  	.append("input").attr("type", "radio")
-					  	.attr("name", "variables")
-					  	.attr("value", header[i]);							
-					// add new label tag and text node
-					parent.select("li:last-child").select("label")
-						.insert("label")
-					  .node().parentNode
-					    .appendChild(textNode);
-				}
-			}
-
-			d3.select(ContainerNode).selectAll("input").on("change", function(){
-				var field = this.value;
-				// Load topojson and plot map graph;
-				d3.json(wendy.topo.getWendyUrl("taiwan"), function(topoShape){
-					// parse topojson to array object (topo Shape)
-					var shape = topo.parse(topoShape);
-					
-					// topo shape join csv data
-					var CsvShape = topo.joinCsv({
-						csv        : csvData,
-						topo       : shape,
-						joinField  : "COUNTYNAME",
-						joinSingle : true,
-						outputField: field								
-					});
-
-					// plot map graph
-					wendy.topo.plotOnLeaflet(L_map, CsvShape, field);
-
-				});//End of load topojson and plot map graph
-			});		
-
-	    });// End of csv load callback
 	};
 
 	/*********************private method**********************************************/

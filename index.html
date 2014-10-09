@@ -1,13 +1,195 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
-	<title>Using d3.js</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Wendy Ploting Tool Page</title>
+	
+	<!-- Loading css style sheet -->
+	<link rel="stylesheet" href="css/bootstrap_grid.css">
+	<link rel="stylesheet" href="css/semantic.css">	
+	<link rel="stylesheet" href="css/leaflet.css">
+	<link rel="stylesheet" href="css/wendy_htmlElement.css">
+
+
+	<!-- Loading js library -->
+	<script src="js/jquery/jquery-1.11.1.js"></script>
+	<script src="js/jquery/jquery-migrate-1.2.1.min.js"></script>
+	<script src="js/xmlParser/jquery.xml2json.js"></script>
+	<script src="js/d3/d3.min.js"></script>
+	<script src="js/d3/topojson.v1.min.js"></script>
+	<script src="js/numeral/numeral.min.js"></script>
+	<script src="js/interpolation/kriging.js"></script>
+	<script src="js/map/leaflet.js"></script>
+	<script src="js/wendy/wendy.js"></script>
+	<script src="js/wendy/wendy_init.js"></script>
+
 </head>
 <body>
-	<p><a href="drawRectangle_scale_tooltip_modify.html">Draw Bar Chart with tooltip</a></p>
-	<p><a href="geoMap.html">Draw Geo Map with tooltip</a></p>
-	<p><a href="topoMap.html">Draw Geo Map using Leaflet map api</a></p>
-	<p><a href="kriging.html">Draw Kriging Map</a></p>
-</body> 
+
+<!-- Menu bar -->
+<div class="ui large top attached tabular menu">
+	<a class="active item">
+		<i class="home icon"></i> Wendy
+	</a>
+	<a class="item">
+		<i class="mail icon"></i> DataBase
+	</a>
+	<a class="item">
+		<i class="user icon"></i> plotting
+	</a>
+</div>
+
+<div class="container-fluid">
+	<div id="ToolMenu" class="row">		
+		<div class="col-md-12">			
+			<div class="large left aligned ui icon header">				
+				<a id="ListLayer" class="ui large black label button">
+					<i class="list layout icon"></i>圖層清單
+				</a>
+				
+				<a id="AddTable" class="ui large black label button">
+					<i class="add sign box icon"></i>新增屬性
+				</a>
+
+				<a id="AddTopo" class="ui large black label button">
+					<i class="add sign box icon"></i>新增向量
+				</a>
+				
+				<a id="Choropleth" class="ui large black label button">
+					<i class="photo icon"></i>畫面量圖
+				</a>
+				
+				<a id="Kriging" class="ui large black label button">
+					<i class="photos basic icon"></i>畫內插圖
+				</a>
+				
+				<a id="Analysis" class="ui large black label button">
+					<i class="wrench icon"></i>分析圖層
+				</a>	
+			</div>
+		</div>
+	</div>
+	
+	<!-- Progress Bar -->
+	<div id="progressBar" class="row">		
+		<div class="ui red striped progress">
+			<div class="bar"></div>
+		</div>
+	</div>
+	
+	<!-- Panels -->
+	<div class="row">		
+		<div id="Panels" class="col-md-3">
+			<div id="ListLayerPanel">
+				<div id="WendyPanel" class="row">
+					<div class="ui small inverted teal block header LayerHeader">
+						內建圖層
+					</div>
+					<div class="ui fluid list LayerMenu">
+						<div class="header"><i class="tags icon"></i>面量圖</div>				
+						<div class="ui fluid selection list">							
+							<div id="popIndex" class="item">人口指標</div>						
+							<div id="eduStatics" class="item">教育統計</div>
+						</div>					
+						
+						<div class="header"><i class="tags icon"></i>內插圖</div>
+						<div class="ui fluid selection list">
+							<div id="pm25" class="item">
+								即時細微粒PM2.5濃度分布圖
+							</div>							
+							<div id="temperature" class="item">即時溫度分布圖</div>
+						</div>					
+					</div>
+				</div>
+
+				<div id="UserPanel" class="row">
+					<div class="ui small inverted teal block header LayerHeader">
+						使用者圖層
+					</div>
+					<div class="ui fluid selection list LayerMenu">
+						<div class="header"><i class="tags icon"></i>面量圖</div>				
+						<div class="ui fluid selection list">
+							
+						</div>			
+						
+						<div class="header"><i class="tags icon"></i>內插圖</div>
+						<div class="ui fluid selection list">
+							
+						</div>	
+					</div>
+				</div>
+			</div>
+			
+			<div id="AddTablePanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					新增屬性資料
+				</div>
+				
+				<div class="ui fluid list LayerMenu">
+					<div class="header"><i class="tags icon"></i>
+						1. 請選擇輸入的資料類型
+					</div>				
+					
+					<div class="ui fluid selection list">
+						<div class="item">逗點分隔(.csv)</div>
+						<div class="item">空白分隔(.tsv)</div>			
+					</div>	
+				
+					<div class="header"><i class="tags icon"></i>
+						2. 在下方欄位中貼上資料
+					</div>
+					<textarea></textarea>
+
+					
+				</div>
+			</div>
+
+			<div id="AddTopoPanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					新增向量資料
+				</div>
+
+				<div class="header"><i class="tags icon"></i>
+					1. 請選擇輸入的資料類型
+				</div>			
+
+				<div class="ui fluid selection list">
+					<div class="item">geoJSON</div>
+					<div class="item">topoJSON</div>
+					<div class="item">KML</div>
+					<div class="item">XML</div>								
+				</div>	
+
+				<div class="header"><i class="tags icon"></i>
+					2. 在下方欄位中貼上資料
+				</div>
+				<textarea></textarea>
+			</div>
+
+			<div id="ChoroplethPanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					面量圖繪製選項
+				</div>
+			</div>
+
+			<div id="KrigingPanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					內插圖繪製選項
+				</div>
+			</div>
+
+			<div id="AnalysisPanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					分析工具
+				</div>
+			</div>
+		</div>
+
+		<!-- Map -->
+		<div id="map" class="col-md-9"></div>		
+	</div>
+
+</div><!-- End of Layerout -->
+</body>
 </html>
