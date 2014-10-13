@@ -7,12 +7,6 @@ $(function(){
 	var csvFlag = 0,
 		tsvFlag = 0;
 
-	// var opts,
-	// 	pop  ={},
-	// 	epa  ={},
-	// 	cwb  ={},
-	// 	user ={};
-	
 	/** Initialize Leaflet Map **/
 	var map = new L.map('map').setView([23.978567, 120.9579531], 7)
 					.addLayer(new L.tileLayer('http://{s}.tiles.mapbox.com/v3/verzonzoon.jdpd6545/{z}/{x}/{y}.png', { 
@@ -20,39 +14,57 @@ $(function(){
 						maxZoom: 18}));	
 
 	/** Initialize all element **/
+	// ListLayer Button active state
 	$("#ListLayer").addClass("red").removeClass("black");
 
-	$("#Panels>div").each(function (){
-		if($(this).attr("id") === "ListLayerPanel"){			
-			$(this).show();
-		}else{
-			$(this).hide();
-		}
-	});
-		
+	// left-side panels
+	$("#Panels>div").hide();
+	$("#ListLayerPanel").show();
+
+	// right-side panels
+	$(".col-md-9").hide();
+	$("#map").show();
+	
+	// hide progressBar 
 	$("#progressBar").hide();
 
 	/***** Tool Menu button *****/	
-	// set generic event
-	$("#ToolMenu .button").click(
-		function(){
+	// set Buttons and Panels event
+	$("#ToolMenu .button").click(function(){
 		// change style
 		$("#ToolMenu .button").addClass("black").removeClass("red");
 		$(this).addClass("red").removeClass("black");
 		
-		// hide all panel
+		// show the relative "left" panels
 		$("#Panels > div").slideUp();
 		$("#" + this.id + "Panel").slideDown();
+
+		// show the relative "right" panels
+		$(".col-md-9").hide();		
+		switch(this.id){
+			case "ListLayer":
+				$("#map").show();
+				break;
+			case "AddTable":
+				$("#tableList").show();
+				break;
+			case "AddTopo":
+				$("#vectorList").show();
+				break;
+			case "Choropleth":
+				$("#ChoroplethOptions").show();
+				break;
+			case "Interpolation":
+				$("#InterpolationOptions").show();
+				break;
+			case "Analysis":
+				$("#AnalysisOptions").show();
+				break;
+			default:
+				$("#map").show();
+		}
 	});
 
-	$("#ListLayer").click(function(){
-		// hide table list and manual
-		$("#tableList").fadeOut();
-
-		// show map
-		$("#map").fadeIn();
-	});	
-	
 	/***** Panels *****/	
 	// Layer List Panel Resize
 	$(".LayerHeader").mouseover(function(){
@@ -318,7 +330,7 @@ $(function(){
 			// parse csv files
 			for(var i=0, max=csvFiles.length; i<max; i++){
 				// run  FileReader onload ajax event by using immediate function 
-				(function(csvFile){					
+				(function (csvFile){					
 					var reader = new FileReader();										
 					reader.readAsText(csvFile, "UTF-8");
 					
@@ -356,7 +368,7 @@ $(function(){
 			// parse tsv files
 			for(var i=0, max=tsvFiles.length; i<max; i++){
 				// run  FileReader onload ajax event by using immediate function 
-				(function(tsvFile){					
+				(function (tsvFile){					
 					var reader = new FileReader();										
 					reader.readAsText(tsvFile, "UTF-8");
 					
@@ -364,7 +376,7 @@ $(function(){
 			  			var tsvContent = e.target.result;
 			  			var table = wendy.tsv.parse(tsvContent);			
 			  			console.log(table);
-			  			// display #map
+			  			// undisplay #map
 			  			$("#map").hide();
 			  			$("#tableList")
 			  				.css("display", "block")
@@ -380,5 +392,83 @@ $(function(){
 		}// end of csvFlag is true
 
 	});//End of "#tableParse" click
+
+	/***** AddTopoPanel *****/
+	/// dropbox
+	$("#vector_dropbox").on("dragenter", function (e){
+		e.stopPropagation();
+		e.preventDefault();
+	});
 	
+	$("#vector_dropbox").on("dragover", function (e){
+		e.stopPropagation();
+		e.preventDefault();	
+	});
+	
+	$("#vector_dropbox").on("drop", function (e){
+		e.stopPropagation();
+  		e.preventDefault();
+  		$(this).css("backgroundColor", "gray").text("完成選取");
+
+  		// file reader
+  		var data = e.originalEvent.dataTransfer;
+  		var files = data.files;  		
+  		
+  		for(var i=0, max=files.length; i<max; i+=1){
+  			(function (file){		  		
+		  		// indentify file type
+		  		var fileName = file.name.split('.')[0],
+		  			fileExt  = file.name.split('.').pop(); //副檔名
+		  		
+		  		// read selected files content
+		  		var reader = new FileReader();
+		  		reader.readAsText(file);
+
+		  		// // after read file content....
+		  		reader.onload = function (e) {	
+		  			// identify file format and convert to object
+		  			var content = reader.result;
+		  			switch(fileExt){
+		  				case("topojson"):
+				  			var topo = wendy.topo.parse(content);
+				  			console.log(topo);
+				  			break;
+				  		
+				  		case("geojson"):				  			
+				  			var topo = JSON.parse(content);				  			
+				  			console.log(topo);
+				  			break;
+				  		
+				  		case("kml"):
+				  			var kmlObj = $.parseXML(content);
+				  			var topo = toGeoJSON.kml(kmlObj)["features"];
+				  			console.log(topo);
+			  				break;
+
+			  			case("gpx"):
+			  				var gpxObj = $.parseXML(content);
+			  				var topo = toGeoJSON.gpx(gpxObj);
+			  				console.log(topo);
+			  				break;
+
+			  			default:
+			  				alert('請確認您的"檔案格式"或"副檔名"符合以下所列的任一項:' + 
+			  					  '(1) .topojson\n' +
+			  					  '(2) .geojson\n' +
+			  					  '(3) .kml\n' +
+			  					  '(4) .gpx'
+			  					 );
+			  				return 0;
+			  		}		
+		  			
+		  			d3.select("#vectorList")			  				
+		  				.append("p")
+		  				.text(fileName + '.' + fileExt +" 載入完成!");
+
+		  		}  	
+
+  			}(files[i]));
+		}
+	
+	});// end of drop file into box
 });

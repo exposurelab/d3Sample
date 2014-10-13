@@ -16,6 +16,7 @@
 	<script src="js/jquery/jquery-1.11.1.js"></script>
 	<script src="js/jquery/jquery-migrate-1.2.1.min.js"></script>
 	<script src="js/xmlParser/jquery.xml2json.js"></script>
+	<script src="js/formatConvert/kml_gpx2geoJson/togeojson.js"></script>
 	<script src="js/d3/d3.min.js"></script>
 	<script src="js/d3/topojson.v1.min.js"></script>
 	<script src="js/numeral/numeral.min.js"></script>
@@ -60,7 +61,7 @@
 					<i class="photo icon"></i>畫面量圖
 				</a>
 				
-				<a id="Kriging" class="ui large black label button">
+				<a id="Interpolation" class="ui large black label button">
 					<i class="photos basic icon"></i>畫內插圖
 				</a>
 				
@@ -86,8 +87,9 @@
 					<div class="ui small inverted teal block header LayerHeader">
 						內建圖層
 					</div>
+					
 					<div class="ui fluid list LayerMenu">
-						<div class="header"><i class="tags icon"></i>面量圖</div>				
+						<div class="header"><i class="tags icon"></i>面量圖</div>		
 						<div class="ui fluid selection list">							
 							<div id="popIndex" class="item">人口指標</div>						
 							<div id="eduStatics" class="item">教育統計</div>
@@ -107,8 +109,9 @@
 					<div class="ui small inverted teal block header LayerHeader">
 						使用者圖層
 					</div>
+					
 					<div class="ui fluid selection list LayerMenu">
-						<div class="header"><i class="tags icon"></i>面量圖</div>				
+						<div class="header"><i class="tags icon"></i>面量圖</div>			
 						<div class="ui fluid selection list">
 							
 						</div>			
@@ -123,12 +126,12 @@
 			
 			<div id="AddTablePanel" class="row">
 				<div class="ui small inverted teal block header LayerHeader">
-					新增屬性資料
+					<i class="settings icon"></i>新增屬性資料
 				</div>
 				
 				<div class="ui fluid list LayerMenu">
-					<div class="header"><i class="tags icon"></i>
-						1. 請選擇輸入的資料類型
+					<div class="header"><i class="setting icon"></i>
+						1. 請依據檔案類型選擇屬性資料
 					</div>				
 					
 					<div class="ui fluid selection list">
@@ -143,7 +146,7 @@
 						</div>		
 					</div>	
 				
-					<div class="header"><i class="tags icon"></i>
+					<div class="header"><i class="setting icon"></i>
 						2.解析表格資料
 					</div>
 					
@@ -151,49 +154,42 @@
 						<div id="tableParse" class="item">
 							解析表格
 						</div>				
-					</div>										
-				
+					</div>
 
 				</div>
 			</div>
 
 			<div id="AddTopoPanel" class="row">
 				<div class="ui small inverted teal block header LayerHeader">
-					新增向量資料
+					<i class="settings icon"></i>新增向量資料
 				</div>
+				
+				<div class="ui fluid list LayerMenu">
+					<div class="header"><i class="setting icon"></i>
+						請將檔案拖曳到下面方塊中
+					</div>			
 
-				<div class="header"><i class="tags icon"></i>
-					1. 請選擇輸入的資料類型
-				</div>			
-
-				<div class="ui fluid selection list">
-					<div class="item">geoJSON</div>
-					<div class="item">topoJSON</div>
-					<div class="item">KML</div>
-					<div class="item">XML</div>								
-				</div>	
-
-				<div class="header"><i class="tags icon"></i>
-					2. 在下方欄位中貼上資料
+					<div class="ui fluid selection list">
+						<div id="vector_dropbox" class="item"></div>						
+					</div>	
 				</div>
-				<textarea></textarea>
 			</div>
 
 			<div id="ChoroplethPanel" class="row">
 				<div class="ui small inverted teal block header LayerHeader">
-					面量圖繪製選項
+					<i class="settings icon"></i>面量圖繪製選項
 				</div>
 			</div>
 
-			<div id="KrigingPanel" class="row">
+			<div id="InterpolationPanel" class="row">
 				<div class="ui small inverted teal block header LayerHeader">
-					內插圖繪製選項
+					<i class="settings icon"></i>內插圖繪製選項
 				</div>
 			</div>
 
 			<div id="AnalysisPanel" class="row">
 				<div class="ui small inverted teal block header LayerHeader">
-					分析工具
+					<i class="settings icon"></i>分析工具
 				</div>
 			</div>
 		</div>
@@ -201,8 +197,64 @@
 		<!-- Map -->
 		<div id="map" class="col-md-9"></div>
 		
-		<!-- TableList -->
-		<div id="tableList" class="col-md-9" style="display:none"></div>	
+		<!-- Table Files List -->
+		<div id="tableList" class="col-md-9" style="display:none">
+			<div class="row">
+				<div class="ui small inverted red block header LayerHeader">
+					<i class="info icon"></i>新增屬性操作說明			
+				</div>
+				<div class="ui fluid selection list">
+					<div class="header"><i class="tags icon"></i>
+						1. 請選擇輸入的資料類型
+					</div>	
+				</div>
+
+				<div class="ui small inverted red block header LayerHeader">
+					<i class="info icon"></i>屬性檔內容				
+				</div>
+			</div><!-- end of row-->			
+		</div><!-- end of tablelist-->	
+
+		<!-- verctor Files List -->
+		<div id="vectorList" class="col-md-9" style="display:none">
+			<div class="row">
+				<div class="ui small inverted red block header LayerHeader">
+					<i class="info icon"></i>向量檔案資訊			
+				</div>
+
+			</div><!-- end of row-->
+		</div>
+
+		<!-- Choropleth Files Options-->
+		<div id="ChoroplethOptions" class="col-md-9" style="display:none">
+			<div class="row">
+				<div class="ui small inverted red block header LayerHeader">
+					<i class="info icon"></i>面量圖資訊			
+				</div>
+
+			</div><!-- end of row-->
+		</div>
+
+		<!-- Interpolation Files Options -->
+		<div id="InterpolationOptions" class="col-md-9" style="display:none">
+			<div class="row">
+				<div class="ui small inverted red block header LayerHeader">
+					<i class="info icon"></i>內插圖資訊			
+				</div>
+
+			</div><!-- end of row-->
+		</div>
+
+		<!-- Analysis Tool Options -->
+		<div id="AnalysisOptions" class="col-md-9" style="display:none">
+			<div class="row">
+				<div class="ui small inverted red block header LayerHeader">
+					<i class="info icon"></i>分析工具資訊			
+				</div>
+
+			</div><!-- end of row-->
+		</div>
+
 	</div>
 
 </div><!-- End of Layerout -->

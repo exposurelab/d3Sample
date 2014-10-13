@@ -18,20 +18,19 @@ a.ui.large.label.button{
 }
 
 #map{
-	height: 500px;	
+	height: 69em;	
 }
-
-#tableList{
-	border: solid 1px gray;
-	height: 500px;
-	-webkit-border-radius: 5px 5px 5px 5px;
-	border-radius: 5px 5px 5px 5px;
-}
-
 
 /* Progress Bar */
 #ProgressBar div.bar{
 	color: white;
+}
+
+/* Add Topo Panel */
+#vector_dropbox{
+	height: 20em;
+	width: 99%;
+	border: dashed 1px gray;
 }
 
 /* Leaflet Map Legend */
