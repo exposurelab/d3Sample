@@ -12,6 +12,7 @@
 	// wendy data type and service
 	wendy.dataset = {};
 	wendy.csv     = {};
+	wendy.tsv	  = {};
 	wendy.topo    = {};
 	wendy.url     = {};
 	wendy.plot    = {};	
@@ -25,7 +26,9 @@
 	// user's storage
 	wendy.user = {
 		map  :{},
-		chart:{}
+		chart:{},
+		table:{},
+		topo :{}
 	};
 
 	// colorbrewer's color sequence
@@ -477,6 +480,38 @@
 		}
 		return output;
 	};
+
+	wendy.tsv.parse = function (tsv){		
+		/*
+		 * @csv 
+		 *  .type: string
+		 *  .content: Comma-Separated Values;
+		 *
+		 * @return value
+		 *  .type: array
+		 *  .content:	     
+		 *	  .<input>				  
+         *       Year,Make,Model,Length
+ 		 *  	 1997,Ford,E350,2.34
+		 *       2000,Mercury,Cougar,2.38
+		 *
+		 *    .<output>
+		 *	     [
+  		 *		   {"Year": "1997", "Make": "Ford", "Model": "E350", "Length": "2.34"},
+  		 *		   {"Year": "2000", "Make": "Mercury", "Model": "Cougar", "Length": "2.38"}
+		 *		 ]
+		 */
+
+		if(typeof tsv == "string"){
+			var tsv = d3.tsv.parse(tsv);
+			return tsv;
+		}else{
+			console.log("wendy.parseTsv Error:");
+			console.log("tsv's type should be string!");
+			return 0;
+		}
+	};
+	
 
 	wendy.csv.parse = function (csv){		
 		/*

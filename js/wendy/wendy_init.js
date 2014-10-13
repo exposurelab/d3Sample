@@ -3,11 +3,15 @@ $(function(){
 	var csv = wendy.csv,
 		topo= wendy.topo;
 		
-	var opts,
-		pop  ={},
-		epa  ={},
-		cwb  ={},
-		user ={};
+	// Define button selected flag
+	var csvFlag = 0,
+		tsvFlag = 0;
+
+	// var opts,
+	// 	pop  ={},
+	// 	epa  ={},
+	// 	cwb  ={},
+	// 	user ={};
 	
 	/** Initialize Leaflet Map **/
 	var map = new L.map('map').setView([23.978567, 120.9579531], 7)
@@ -39,7 +43,15 @@ $(function(){
 		// hide all panel
 		$("#Panels > div").slideUp();
 		$("#" + this.id + "Panel").slideDown();
-	});		
+	});
+
+	$("#ListLayer").click(function(){
+		// hide table list and manual
+		$("#tableList").fadeOut();
+
+		// show map
+		$("#map").fadeIn();
+	});	
 	
 	/***** Panels *****/	
 	// Layer List Panel Resize
@@ -58,7 +70,7 @@ $(function(){
 
 	/***** WendyPanel *****/
 	// wendy Layer Options
-	$("div.item").toggle(
+	$("#WendyPanel div.item").toggle(
 		function(){
 			$(this).css("background-color", "gray")
 					.css("color", "white");
@@ -244,8 +256,129 @@ $(function(){
 
 		// toggle off
 		function (){
-
+			wendy.graph.removeAll();
+			console.log("remove!");
 		}
-	);					
+	);
+
+	/***** UserPanel *****/
+
+	/***** AddTablePanel *****/
+	$("#csvSelect").on("click", function (e){
+		e.preventDefault(); // prevent navigation to "#"
+		$("#csvFiles")[0].click();
+
+		// set button group css style
+		$("#csvSelect")
+		.css("color", "white")
+		.css("background-color", "gray");
+
+		$("#tsvSelect")
+		.css("color", "gray")
+		.css("background-color", "white");
+
+		// set csvFlag and tsvFlag
+		csvFlag = 1;
+		tsvFlag = 0;
+	});
+
+	$("#tsvSelect").on("click", function (e){
+		e.preventDefault(); // prevent navigation to "#"
+		$("#tsvFiles")[0].click();
+
+		// set button group css style
+		$("#csvSelect")
+		.css("color", "gray")
+		.css("background-color", "white");
+
+		$("#tsvSelect")
+		.css("color", "white")
+		.css("background-color", "gray");
+
+		// set csvFlag and tsvFlag
+		csvFlag = 0;
+		tsvFlag = 1;
+	});
+
+
+	$("#tableParse").on("click", function (e){
+		e.preventDefault(); // prevent navigation to "#"		
+
+		// csv selected
+		if(csvFlag){
+			var csvFiles = $("#csvFiles")[0].files;			
+			
+			// check user already select csv files
+			if(csvFiles.length === 0){
+				alert("請選擇逗點分隔(.csv)檔案，\n"+
+					  "可以一次選取多個檔案喔!");
+				return 0;
+			}
+
+			// parse csv files
+			for(var i=0, max=csvFiles.length; i<max; i++){
+				// run  FileReader onload ajax event by using immediate function 
+				(function(csvFile){					
+					var reader = new FileReader();										
+					reader.readAsText(csvFile, "UTF-8");
+					
+					reader.onload = function(e){
+			  			var csvContent = e.target.result;
+			  			var table = wendy.csv.parse(csvContent);			
+			  			
+			  			// display #map
+			  			$("#map").hide();
+			  			$("#tableList")
+			  				.css("display", "block")
+			  				.slideDown();
+			  			
+			  			d3.select("#tableList")			  				
+			  				.append("p")
+			  				.text(csvContent);	  			
+					}				
+				
+				})(csvFiles[i]);			
+			
+			}// End of for loop		
+		}// end of csvFlag is true
+
+		// tsv selected
+		if(tsvFlag){
+			var tsvFiles = $("#tsvFiles")[0].files;
+
+			// check user already select csv files
+			if(tsvFiles.length === 0){
+				alert("請選擇空白分隔(.txt)檔案，\n"+
+					  "可以一次選取多個檔案喔!");
+				return 0;
+			}
+
+			// parse tsv files
+			for(var i=0, max=tsvFiles.length; i<max; i++){
+				// run  FileReader onload ajax event by using immediate function 
+				(function(tsvFile){					
+					var reader = new FileReader();										
+					reader.readAsText(tsvFile, "UTF-8");
+					
+					reader.onload = function(e){
+			  			var tsvContent = e.target.result;
+			  			var table = wendy.tsv.parse(tsvContent);			
+			  			console.log(table);
+			  			// display #map
+			  			$("#map").hide();
+			  			$("#tableList")
+			  				.css("display", "block")
+			  				.slideDown();
+			  			
+			  			d3.select("#tableList")			  				
+			  				.append("p")
+			  				.text(tsvContent);	  			
+					}				
+				
+				})(tsvFiles[i]);
+			}// End of for loop			
+		}// end of csvFlag is true
+
+	});//End of "#tableParse" click
 	
 });

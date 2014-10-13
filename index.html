@@ -132,16 +132,28 @@
 					</div>				
 					
 					<div class="ui fluid selection list">
-						<div class="item">逗點分隔(.csv)</div>
-						<div class="item">空白分隔(.tsv)</div>			
+						<input id="csvFiles" type="file" multiple accept=".csv" style="display:none">
+						<div id="csvSelect" class="item">
+							逗點分隔(.csv)							
+						</div>
+						
+						<input id="tsvFiles" type="file" multiple accept=".txt" style="display:none">
+						<div id="tsvSelect" class="item">
+							空白分隔(.txt)
+						</div>		
 					</div>	
 				
 					<div class="header"><i class="tags icon"></i>
-						2. 在下方欄位中貼上資料
+						2.解析表格資料
 					</div>
-					<textarea></textarea>
-
 					
+					<div class="ui fluid selection list">			
+						<div id="tableParse" class="item">
+							解析表格
+						</div>				
+					</div>										
+				
+
 				</div>
 			</div>
 
@@ -187,7 +199,10 @@
 		</div>
 
 		<!-- Map -->
-		<div id="map" class="col-md-9"></div>		
+		<div id="map" class="col-md-9"></div>
+		
+		<!-- TableList -->
+		<div id="tableList" class="col-md-9" style="display:none"></div>	
 	</div>
 
 </div><!-- End of Layerout -->

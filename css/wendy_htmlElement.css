@@ -21,10 +21,13 @@ a.ui.large.label.button{
 	height: 500px;	
 }
 
-textarea{
-	margin-left: .5em;
-	margin-right: .5em;
+#tableList{
+	border: solid 1px gray;
+	height: 500px;
+	-webkit-border-radius: 5px 5px 5px 5px;
+	border-radius: 5px 5px 5px 5px;
 }
+
 
 /* Progress Bar */
 #ProgressBar div.bar{
