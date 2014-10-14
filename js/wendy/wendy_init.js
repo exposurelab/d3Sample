@@ -314,83 +314,117 @@ $(function(){
 
 
 	$("#tableParse").on("click", function (e){
-		e.preventDefault(); // prevent navigation to "#"		
+	 	// prevent navigation to "#"
+		e.preventDefault();
 
 		// csv selected
 		if(csvFlag){
-			var csvFiles = $("#csvFiles")[0].files;			
+			var tableFiles = $("#csvFiles")[0].files;			
 			
 			// check user already select csv files
-			if(csvFiles.length === 0){
+			if(tableFiles.length === 0){
 				alert("請選擇逗點分隔(.csv)檔案，\n"+
 					  "可以一次選取多個檔案喔!");
 				return 0;
 			}
-
-			// parse csv files
-			for(var i=0, max=csvFiles.length; i<max; i++){
-				// run  FileReader onload ajax event by using immediate function 
-				(function (csvFile){					
-					var reader = new FileReader();										
-					reader.readAsText(csvFile, "UTF-8");
-					
-					reader.onload = function(e){
-			  			var csvContent = e.target.result;
-			  			var table = wendy.csv.parse(csvContent);			
-			  			
-			  			// display #map
-			  			$("#map").hide();
-			  			$("#tableList")
-			  				.css("display", "block")
-			  				.slideDown();
-			  			
-			  			d3.select("#tableList")			  				
-			  				.append("p")
-			  				.text(csvContent);	  			
-					}				
-				
-				})(csvFiles[i]);			
-			
-			}// End of for loop		
-		}// end of csvFlag is true
+		}
 
 		// tsv selected
 		if(tsvFlag){
-			var tsvFiles = $("#tsvFiles")[0].files;
+			var tableFiles = $("#tsvFiles")[0].files;
 
 			// check user already select csv files
-			if(tsvFiles.length === 0){
+			if(tableFiles.length === 0){
 				alert("請選擇空白分隔(.txt)檔案，\n"+
 					  "可以一次選取多個檔案喔!");
 				return 0;
 			}
+		}
 
-			// parse tsv files
-			for(var i=0, max=tsvFiles.length; i<max; i++){
-				// run  FileReader onload ajax event by using immediate function 
-				(function (tsvFile){					
-					var reader = new FileReader();										
-					reader.readAsText(tsvFile, "UTF-8");
+		// parse csv files
+		for(var i=0, max=tableFiles.length; i<max; i++){
+			// run FileReader onload ajax event by using immediate function 
+			(function (tableFile){					
+		  		// indentify file type
+	  			var fileName = tableFile.name.split('.')[0];
+	  			var fileExt  = tableFile.name.split('.').pop();
+				var reader = new FileReader();										
+				reader.readAsText(tableFile, "UTF-8");
+				console.log(fileExt);
+				reader.onload = function(e){
+		  			var tableContent = e.target.result;
+		  			
+		  			if(fileExt === "csv"){
+		  				var table = wendy.csv.parse(tableContent);			
+		  			}else if(fileExt === "txt"){
+		  				var table = wendy.tsv.parse(tableContent);
+		  			}else{
+		  				alert("您所選的檔案格式，本系統目前不支援!");
+		  				return 0;
+		  			}
+
+		  			var columnHeader = Object.keys(table[0]);			  			
+		  			
+		  			d3.select('#tableList')
+	  				  .select(".FileContent")
+	  				  .append("h2")
+	  				  .attr("class", "ui header")
+	  				  .attr("name", fileName)
+	  				  .html('<i class="table icon"></i>' + fileName)
+	  				  .node();
+
+	  				// table Name header event 
+		  			$("#tableList .FileContent h2")
+			  			.mouseover(function (){
+			  				$(this).css("cursor", "pointer");
+			  			})			  			
+			  			.toggle(
+		  					function (){
+		  						$(this).next("table").fadeOut();
+		  					},			  					
+		  					function (){
+		  						$(this).next("table").slideDown();
+		  					}
+			  			);
+
+		  			/// Create table Contains csv content			  			
+		  			//  (1)Create table framework
+		  			var tableSelector = d3.select("#tableList")
+		  								  .select(".FileContent")			  				
+		  								  .append("table")
+		  				                  .attr("class", "ui table segment")
+		  				                  .attr("tableName", fileName);		  			
 					
-					reader.onload = function(e){
-			  			var tsvContent = e.target.result;
-			  			var table = wendy.tsv.parse(tsvContent);			
-			  			console.log(table);
-			  			// undisplay #map
-			  			$("#map").hide();
-			  			$("#tableList")
-			  				.css("display", "block")
-			  				.slideDown();
-			  			
-			  			d3.select("#tableList")			  				
-			  				.append("p")
-			  				.text(tsvContent);	  			
-					}				
-				
-				})(tsvFiles[i]);
-			}// End of for loop			
-		}// end of csvFlag is true
+					//  (2)Create table header
+		  			var tableHeader = tableSelector.append("thead").append("tr");
+		  			
+		  			for(var col=0, maxCol=columnHeader.length; col<maxCol; col+=1){			  				
+		  					var fieldName = columnHeader[col];			  					
+		  					tableHeader.append("th")
+		  							   .text(fieldName);
+		  			}
+		  			
+		  			//  (3)Create table Content
+		  			var tableBody = tableSelector.append("tbody");
 
+		  			for(var row=0, maxRow=table.length; row<maxRow; row+=1){
+						var tableBodyContent = tableBody.append("tr");
+
+						if(row%2 === 1){
+							tableBodyContent.style("background-color", "#EDEDED");
+						}
+
+		  				for(var col=0, maxCol=columnHeader.length; col<maxCol; col+=1){
+		  					var fieldName = columnHeader[col];
+		  					tableBodyContent.append("td").text(table[row][fieldName]);
+		  				}
+		  			}
+
+				}// End of reader.onload			
+			
+			})(tableFiles[i]);		
+		
+		}// End of for loop
 	});//End of "#tableParse" click
 
 	/***** AddTopoPanel *****/
