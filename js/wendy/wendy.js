@@ -15,20 +15,27 @@
 	wendy.tsv	  = {};
 	wendy.topo    = {};
 	wendy.url     = {};
-	wendy.plot    = {};	
+	wendy.plot    = {};
+	wendy.graph   = {};
 
-	// graph's storage
-	wendy.graph = {
-		map  : {},
-		chart: {}
+	// wendy's storage
+	wendy.builtIn = {
+		table     :{},
+		tableField:{},
+		topo      :{},
+		topoField :{},
+		choropleth:{},
+		kriging   :{}
 	};
 	
 	// user's storage
 	wendy.user = {
-		map  :{},
-		chart:{},
-		table:{},
-		topo :{}
+		table     :{},
+		tableField:{},
+		topo      :{},
+		topoField :{},
+		choropleth:{},
+		kriging   :{}
 	};
 
 	// colorbrewer's color sequence
@@ -658,9 +665,15 @@
 		 *      .type: string or object
 		 *      .content: topojson
 		 *
-		 *     @joinField
+		 *     @topoJoinField
 		 *      .type: string
-		 *		.content: joined column name
+		 *		.content: topo's joined column name
+		 *		.default: "COUNTYNAME"
+		 *      .options
+		 *
+ 		 *     @csvJoinField
+		 *      .type: string
+		 *		.content: table's joined column name
 		 *		.default: "COUNTYNAME"
 		 *      .options
 		 *     
@@ -691,7 +704,8 @@
 		var opt = {
 			csv            : options.csv || false,
 			topo           : options.topo || false,
-			joinField      : options.joinField || "COUNTYNAME",
+			topoJoinField  : options.topoJoinField || "COUNTYNAME",
+			csvJoinField   : options.csvJoinField || "COUNTYNAME",
 			joinSingle	   : options.joinSingle || false,
 			outputField    : options.outputField || false,
 			filter         : options.filter || false
@@ -699,15 +713,15 @@
 
 		var csv             = opt.csv,
 			topo, // not reference to opt.topo
-			joinField       = opt.joinField,
+			topoJoinField   = opt.topoJoinField,
+			csvJoinField    = opt.csvJoinField,
 			joinSingle 		= opt.joinSingle,
 			outputField     = opt.outputField,
 			filter          = opt.filter;
 		
 		if(typeof opt.csv == "string"){
 			csv = wendy.csv.parse(csv);
-		}
-		
+		}		
 
 		if(typeof opt.topo == "string"){
 			topo = wendy.topo.parse(topo);
@@ -720,7 +734,7 @@
 			for(var i=0, csvMax=csv.length; i<csvMax; i++)
 			{
 				// csv join field
-				var csv_join_field = csv[i][joinField];
+				var csv_join_field = csv[i][csvJoinField];
 				
 				// csv output field
 				var csv_value = parseFloat(csv[i][outputField]);
@@ -734,7 +748,7 @@
 				for(j=0, topoMax=topo.length; j<topoMax; j++)
 				{
 					// From city topojson get County Name
-					var topo_join_field = topo[j].properties[joinField];
+					var topo_join_field = topo[j].properties[topoJoinField];
 
 					if(csv_join_field == topo_join_field){
 						// Copy csv data into json
@@ -750,19 +764,19 @@
 			for(var i=0, csvMax=csv.length; i<csvMax; i++)
 			{
 				// csv join field
-				var csv_join_field = csv[i][joinField];				
+				var csv_join_field = csv[i][csvJoinField];				
 				
 				// Join csv and topo by join Field Name
 				for(j=0, topoMax=topo.length; j<topoMax; j++)
 				{
 					// From topojson get County Name field
-					var topo_join_field = topo[j].properties[joinField];
+					var topo_join_field = topo[j].properties[topoJoinField];
 					
 					if(csv_join_field == topo_join_field){						
 						
 						for(var k=0, fieldMax=csv_field_name_list.length; k<fieldMax; k++)
 						{								
-							if(csv_field_name_list[k] != joinField ){							
+							if(csv_field_name_list[k] != topoJoinField ){							
 							// Create topo[j].properties[] and storage csv value
 								topo[j].properties[csv_field_name_list[k]] = csv[i][csv_field_name_list[k]];								
 							}							
@@ -1003,7 +1017,7 @@
 	
 	}; // End of wendy.plot.topoMap()
 
-	wendy.topo.plotOnLeaflet = function (L_map, topo, outputField, nClass, colorSelector){
+	wendy.topo.plotOnLeaflet = function (L_map, topo, outputField, svgName, nClass, colorSelector){
 		/**
  		 * @L_map
 		 *  .type   : object
@@ -1016,6 +1030,14 @@
 		 * @outputField
 		 *  .type   : string
 		 *  .content: field which wanted to be plotting
+		 *
+		 * @svgName
+		 *  .type   : string
+		 *  .content: svg graph name
+		 *  .option
+		 *  .warning: 
+		 *         argument exist: class == "wendy"	 name = outputfield 
+		 *	   argument not exist: class == "user"   name = svgName
 		 *
 		 * @nClass
 		 *  .type   : integer
@@ -1041,7 +1063,8 @@
 		// initialize and check argument
 		var L_map		  = L_map || false,
 			topo          = topo || false,
-			outputField	  = outputField || false,  
+			outputField	  = outputField || false,
+			svgName		  = svgName || outputField, 
 			nClass        = nClass || 5,
 			colorSelector = colorSelector || "YlOrRd";
 	
@@ -1067,8 +1090,17 @@
 		}
 		
 		// Add a svg to Leaflet's overlay pane
-		var svg = d3.select(L_map.getPanes().overlayPane).append("svg"),
-			g   = svg.append("g").attr("class", "leaflet-zoom-hide");
+		var svg = d3.select(L_map.getPanes().overlayPane).append("svg");
+		
+		if(svgName === outputField){	
+			svg.attr("name", svgName)
+			   .attr("class", "wendy");
+		}else{
+			svg.attr("name", svgName)
+			   .attr("class", "user");
+		}
+
+		var	g   = svg.append("g").attr("class", "leaflet-zoom-hide");
 
 		// Adapt Leaflet’s API to fit D3 by implementing
 		// a custom geometric transformation
@@ -1143,7 +1175,7 @@
 	
 	}; // End of wendy.topo.plotOnLeaflet()
 
-	wendy.graph.plotChoropleth = function (L_map, topo, outputField, nClass, colorSelector){
+	wendy.graph.plotChoropleth = function (L_map, topo, outputField, svgName, nClass, colorSelector){
 
 		// Define reference wendy module
 		var topoShape = wendy.topo;
@@ -1152,7 +1184,8 @@
 		// initialize and check argument
 		var L_map		  = L_map || false,
 			topo          = topo || false,
-			outputField	  = outputField || false,  
+			outputField	  = outputField || false,
+			svgName       = svgName || outputField,
 			nClass        = nClass || 5,
 			colorSelector = colorSelector || "YlOrRd";
 	
@@ -1178,9 +1211,21 @@
 		}
 		
 		// Add a svg to Leaflet's overlay pane
-		var svg = d3.select(L_map.getPanes().overlayPane).append("svg")
-					.attr("name", outputField),
-			g   = svg.append("g")
+		if(svgName === outputField){
+			// built-In svg
+			var svg = d3.select(L_map.getPanes().overlayPane)
+						.append("svg")
+						.attr("name", svgName)
+						.attr("class", "wendy");			
+		}else{
+			// user create svg
+			var svg = d3.select(L_map.getPanes().overlayPane)
+						.append("svg")
+						.attr("name", svgName)
+						.attr("class", "user");	
+		}	
+
+		var	g   = svg.append("g")
 					 .attr("class", "leaflet-zoom-hide");
 
 		// Adapt Leaflet’s API to fit D3 by implementing
@@ -1243,8 +1288,8 @@
 							"opacity": ".7"
 						})
 					  .append("h3")
-						.text(d.properties["COUNTYNAME"] + "-" + outputField);
-					
+						.text(outputField + "-" + d.properties["COUNTYNAME"]);
+
 					d3.select("#map").select("div.choroplethInfo")
 					  .append("p")
 					  	.style("color", "red")

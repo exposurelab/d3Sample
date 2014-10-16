@@ -1,17 +1,21 @@
 $(function(){	
 	// Define local variable and wendy library module
-	var csv = wendy.csv,
-		topo= wendy.topo;
-		
-	// Define button selected flag
-	var csvFlag = 0,
-		tsvFlag = 0;
+	var csv 	= wendy.csv,
+		topo    = wendy.topo,
+		builtIn = wendy.builtIn,
+		user    = wendy.user;
 
+	// Define button selected flag
+	var csvFlag   	  = 0,
+		tsvFlag       = 0,		
+		choropleth    = {},
+		interpolation = {};
+	
 	/** Initialize Leaflet Map **/
 	var map = new L.map('map').setView([23.978567, 120.9579531], 7)
 					.addLayer(new L.tileLayer('http://{s}.tiles.mapbox.com/v3/verzonzoon.jdpd6545/{z}/{x}/{y}.png', { 
 						attribution: '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a>', 
-						maxZoom: 18}));	
+						maxZoom: 18}));
 
 	/** Initialize all element **/
 	// ListLayer Button active state
@@ -42,27 +46,79 @@ $(function(){
 		// show the relative "right" panels
 		$(".col-md-9").hide();		
 		switch(this.id){
-			case "ListLayer":
-				$("#map").show();
-				break;
+			// case "ListLayer":
+			// 	$("#map").show();
+			// 	break;
+			// case "OrderLayer":
+			// 	$("#map").show();
+			// 	break;
 			case "AddTable":
 				$("#tableList").show();
 				break;
 			case "AddTopo":
 				$("#vectorList").show();
 				break;
-			case "Choropleth":
-				$("#ChoroplethOptions").show();
-				break;
-			case "Interpolation":
-				$("#InterpolationOptions").show();
-				break;
+			// case "Choropleth":
+			// 	$("#ChoroplethOptions").show();
+			// 	break;
+			// case "Interpolation":
+			// 	$("#InterpolationOptions").show();
+			// 	break;
 			case "Analysis":
 				$("#AnalysisOptions").show();
 				break;
 			default:
 				$("#map").show();
 		}
+	});
+
+	$("#OrderLayer").on("click", function(){		
+		var svgList = d3.select(".leaflet-map-pane")
+					  	.select(".leaflet-objects-pane")
+					  	.select(".leaflet-overlay-pane")
+			 		  	.selectAll("svg");
+		
+		// remove exist svg list 
+		$("#OrderLayerPanel > [data-dataType='graphList']").children('*').remove();
+		
+		// show exist svg list
+ 		svgList.each(function (d, i){
+ 				var svgName  = $(this).attr("name");
+ 				var svgClass = $(this).attr("class");
+ 				var z_index  = $(this).css("z-index");
+
+ 				/// create wendy layer options
+ 				var parentNode = d3.select("#OrderLayerPanel")
+				 				   .select("[data-dataType='graphList']")
+				 				   .append("div")
+				 				   .attr("data-graphName", svgName)
+				 				   .attr("data-graphClass", svgClass)
+				 				   .attr("class", "header");
+				
+				// create add and minus button
+				parentNode.append("a")
+						  .attr("data-action","add")
+						  .attr("class", "ui black label button")
+						  .text("+");
+				
+				parentNode.append("a")
+						  .attr("data-action","minus")
+						  .attr("class", "ui black label button")
+						  .text("─");
+
+				// create z-index input text
+				parentNode.append("input")
+						  .attr("type", "text")
+						  .attr("data-graphName", svgName)
+						  .attr("data-graphClass", svgClass)
+						  .attr("value", z_index)
+						  .attr("placeholder", z_index)
+						  .style("width", "2em");
+
+				// create label
+				parentNode.append("label").html("&nbsp&nbsp&nbsp" + svgName);
+ 				
+ 		});// End of List exist svg options	
 	});
 
 	/***** Panels *****/	
@@ -103,152 +159,216 @@ $(function(){
 			}else{				
 				// insert fields container node after selected nodes
 				$(this).after('<div class="ui fluid selection list"></div>');
+				$(this).next('div').attr("data-graphType", "choropleth");
 
 				// show population index fields
 				var parentNode = "#" + this.id + " + .list";
 				var url = wendy.csv.getChoroplethUrl(this.id);				
-				
+				var dataSource = this.id;
 				d3.csv(url, function (table){				    
 				    var header = Object.keys(table[0]);				    
 					for(var i=0, max=header.length; i<max; i+=1){
 						if (header[i]!=="COUNTYNAME"){						
 							// show field options
 							d3.select(parentNode).append("div")							 
-						  	  .attr("class", "item")
+						  	  .attr("class", "item")						  	  
+						  	  .attr("data-graphName", header[i])
 						  	  .attr("name", header[i])
-						  	  .text(header[i]);					  	
-
-						  	// bind plot map event for each option
-						  	$(parentNode + " div[name='" + header[i] + "']").on("click",function (){
-		  						// set all wendy options off
-		  						$("#popIndex + .list  div.item")
-		  							.css("background-color", "white")
-									.css("color", "gray");
-
-		  						$("#eduStatics + .list  div.item")
-		  							.css("background-color", "white")
-									.css("color", "gray");
-
-		  						// set toggle on style
-		  						$(this).css("background-color", "gray")
-										.css("color", "white");
-				  			
-					  			// load twCounty topo and plot map
-					  			var fieldName = $(this).attr("name");
-					  			d3.json(topo.getTopoUrl("twCounty_after2010"), function(json){
-					  				var twCounty = topo.parse(json);
-					  				var twCounty = topo.joinCsv({
-										csv        : table,
-										topo       : twCounty,
-										joinField  : "COUNTYNAME",
-										joinSingle : true,
-										outputField: fieldName,
-										filter     : false
-					  				});							  				
-					  				wendy.graph.plotChoropleth(map, twCounty, fieldName);
-					  			});
-						  	});
-
+						  	  .attr("data-dataSource", dataSource)
+						  	  .style("color", "gray")
+						  	  .style("background-color", "white")
+						  	  .text(header[i]);
+						
 						}// end of add options
-					}// end of for loop  
-				
+					}// end of for loop 				
 				});// end of d3.csv load
 			}
 		},
 
-		// toggle off
+		// toggle off: hide table fields
 		function (){
 			$("#"+ this.id + "+.list").slideUp();
 		}
-	);	
+	);
+	
+	// built-in choropleth button event
+	$("#WendyPanel").on("click", "[data-graphType='choropleth'] [data-graphName]", function (){
+		// svg variable
+		var outputField = $(this).attr("name");
+		var svgSelector = ".wendy[name='"+ outputField + "']";
+		var svg = wendy.builtIn.choropleth[outputField];
+
+		// button click event 
+		if($(this).css("color") === "rgb(128, 128, 128)"){
+			/// toggle on
+			//  1. set button style
+			$(this).css("background-color", "gray")
+					.css("color","white");
+
+			// 2. identify if layer is exist or not
+			// 2-1. if svg is not exist
+			if(svg === undefined){
+				d3.csv(wendy.csv.getChoroplethUrl($(this).attr("data-dataSource")), function(table){
+					d3.json(topo.getTopoUrl("twCounty_after2010"), function(json){
+		  				var twCounty = topo.parse(json);
+		  				var twCounty = topo.joinCsv({
+							csv          : table,
+							topo         : twCounty,
+							topoJoinField: "COUNTYNAME",
+							csvJoinField : "COUNTYNAME",
+							joinSingle   : true,
+							outputField  : outputField,
+		  				});
+		  				// plot built-in choropleth
+		  				wendy.graph.plotChoropleth(map, twCounty, outputField);
+		  				
+		  				// save choropleth 
+		  				wendy.builtIn.choropleth[outputField]
+		  					 = d3.select(".leaflet-map-pane")
+								 .select(".leaflet-objects-pane")
+								 .select(".leaflet-overlay-pane")
+								 .select(svgSelector)
+								 .style("z-index", 1);
+					});// End of topo load
+				});// End of csv load
+				return 0;
+			}
+			// 2.2 if svg is exist
+			svg.style("opacity", 1)
+			   .style("pointer-events", null)
+			   .style("z-index", 1);
+		}// End of button toggle on
+
+		else{
+			/// toggle off
+			//  1. set button style
+			$(this).css("background-color", "white")
+					.css("color", "gray");
+
+			//  2. hide svg
+			svg.style("opacity", 0)
+			   .style("pointer-events", "none")
+			   .style("z-index", 0);
+
+		}// End of button toggle off
+	});
 
 	$("#pm25").toggle(
 		// toggle on
 		function (){
-			// set progress bar
-			$("#progressBar").show();
-			$("#progressBar div.bar").attr("style", "width:10%");
-			
-			d3.csv("Data/csv/epa/EPA_AirStation.csv", function (airSite){				
-				
+			var svgName = this.id;
+			var svg = wendy.builtIn.kriging[svgName];
+			if(svg === undefined){
 				// set progress bar
-				$("#progressBar div.bar").attr("style", "width:30%").text("環保署資料下載中...");
-
-				// air quality data url
-				var aqxUrl="http://opendata.epa.gov.tw/ws/Data/AQX/?$orderby=SiteName&$skip=0&$top=1000&format=json";						
-				d3.json(wendy.getCloudUrl(aqxUrl), function (aqx){						
+				$("#progressBar").show();
+				$("#progressBar div.bar").attr("style", "width:10%");				
+				d3.csv("Data/csv/epa/EPA_AirStation.csv", function (airSite){				
 					
 					// set progress bar
-					$("#progressBar div.bar").attr("style", "width:45%").text("");
+					$("#progressBar div.bar").attr("style", "width:30%")
+											 .css("color", "white")
+											 .css("font-size", "1.2em")
+											 .text("環保署資料下載中...請勿點擊其他按鈕...");
 
-					d3.json("Data/json/twGrid.topo.json", function (twGrid){
-						// set progress bar
-						$("#progressBar div.bar").attr("style", "width:50%");
-						
-						// parse twGrid topojson
-						var twGrid = topo.parse(twGrid);
-					
-						// join wendy csv and user csv by siteName
-						var aqxCsv = csv.csvJoinCsv(airSite, aqx);
+					// air quality data url
+					var aqxUrl="http://opendata.epa.gov.tw/ws/Data/AQX/?$orderby=SiteName&$skip=0&$top=1000&format=json";						
+					d3.json(wendy.getCloudUrl(aqxUrl), function (aqx){						
 						
 						// set progress bar
-						$("#progressBar div.bar").attr("style", "width:60%");
-						
-						// Define kriging variable
-						var t = [],
-							x = [],
-							y = [],
-							model = "exponential",
-							sigma2 = 0,
-							alpha = 100,
-							variogram;
+						$("#progressBar div.bar").attr("style", "width:45%")
+												 .css("color", "white")
+												 .css("font-size", "1.2em")
+												 .text("台灣網格讀取中...請勿點擊其他按鈕...");
 
-						// Extract kriging variable from aqx csv file
-						for(var i=0, max=aqxCsv.length; i<max; i+=1){
-							var lng = aqxCsv[i]["Lng"],
-								lat = aqxCsv[i]["Lat"],
-								value = aqxCsv[i]["PM2.5"];
-							x.push(lng);
-							y.push(lat);
-							t.push(value);
-						}
-
-						// kriging training predicted function
-						variogram = kriging.train(t, x, y, model, sigma2, alpha);					
-						
-						// set progress bar
-						$("#progressBar div.bar").attr("style", "width:70%");
-						
-						// add kriging predicted value into twGrid
-						for(var i=0, max=twGrid.length; i<max; i+=1){
-							var newX = twGrid[i]["properties"]["Lng"],
-								newY = twGrid[i]["properties"]["Lat"];
+						d3.json("Data/json/twGrid.topo.json", function (twGrid){
+							// set progress bar
+							$("#progressBar div.bar").attr("style", "width:50%");
 							
-							twGrid[i]["properties"]["PM2.5"] 
-								= kriging.predict(newX, newY, variogram);
-						}						
+							// parse twGrid topojson
+							var twGrid = topo.parse(twGrid);
 						
-						// set progress bar
-						$("#progressBar div.bar").attr("style", "width:80%");
-						
-						// plot interpolation graph
-						wendy.topo.plotOnLeaflet(map, twGrid, "PM2.5");
+							// join wendy csv and user csv by siteName
+							var aqxCsv = csv.csvJoinCsv(airSite, aqx);
+							
+							// set progress bar
+							$("#progressBar div.bar").attr("style", "width:60%");
+							
+							// Define kriging variable
+							var t = [],
+								x = [],
+								y = [],
+								model = "exponential",
+								sigma2 = 0,
+								alpha = 100,
+								variogram;
 
-						// set progress bar
-						$("#progressBar div.bar").attr("style", "width:100%");
-						$("#progressBar").fadeOut();
+							// Extract kriging variable from aqx csv file
+							for(var i=0, max=aqxCsv.length; i<max; i+=1){
+								var lng = aqxCsv[i]["Lng"],
+									lat = aqxCsv[i]["Lat"],
+									value = aqxCsv[i]["PM2.5"];
+								x.push(lng);
+								y.push(lat);
+								t.push(value);
+							}
 
-					}); // End of twGrid topo json
-				}); // End of loading pm2.5 csv from epa open data
-			}); // End of loading air station csv
+							// kriging training predicted function
+							variogram = kriging.train(t, x, y, model, sigma2, alpha);					
+							
+							// set progress bar
+							$("#progressBar div.bar").attr("style", "width:70%").text("");
+							
+							// add kriging predicted value into twGrid
+							for(var i=0, max=twGrid.length; i<max; i+=1){
+								var newX = twGrid[i]["properties"]["Lng"],
+									newY = twGrid[i]["properties"]["Lat"];
+								
+								twGrid[i]["properties"]["PM2.5"] 
+									= kriging.predict(newX, newY, variogram);
+							}						
+							
+							// set progress bar
+							$("#progressBar div.bar").attr("style", "width:80%");
+							
+							// plot interpolation graph
+							wendy.topo.plotOnLeaflet(map, twGrid, "PM2.5");
 
+							// save svg graph
+							wendy.builtIn.kriging[svgName]
+								= d3.select(".leaflet-map-pane")
+									 .select(".leaflet-objects-pane")
+									 .select(".leaflet-overlay-pane")
+									 .select("svg.wendy[name='PM2.5']")
+									 .style("z-index", 1);
 
-		},
+							// set progress bar
+							$("#progressBar div.bar").attr("style", "width:100%");
+							$("#progressBar").fadeOut();
+
+						}); // End of twGrid topo json
+					}); // End of loading pm2.5 csv from epa open data
+				}); // End of loading air station csv				
+			}// End of svg is not exist
+			
+			// svg is exist
+			else{
+				svg.style("opacity", 1)
+			   	   .style("pointer-events", null)
+			   	   .style("z-index", 1);
+			}
+		
+		},// end of toggle on 
 		
 		// toggle off
 		function (){
-			wendy.graph.removeAll();
-			console.log("remove!");
+			var svgName = this.id;
+			var svg = wendy.builtIn.kriging[svgName];
+			
+			// hide svg
+			svg.style("opacity", 0)
+			   .style("pointer-events", "none")
+			   .style("z-index", 0);
+			
 		}
 	);
 
@@ -274,7 +394,93 @@ $(function(){
 	);
 
 	/***** UserPanel *****/
+	$("#UserPanel [data-graphType='choropleth']").on("click", "[data-graphName]", function(){		
+		var svg= wendy.user.choropleth[$(this).attr("data-graphName")];
+		
+		if($(this).css("background-color") === "rgb(128, 128, 128)"){
+			/// toggle off
+			//  1.set button style
+			$(this).css("background-color" ,"white").css("color", "gray");
+			
+			//  2.hide svg
+			svg.style("opacity", 0)
+			   .style("pointer-events", "none")
+			   .style("z-index", 0);
+		
+		}else{
+			/// toggle on
+			$(this).css("background-color", "rgb(128, 128, 128)").css("color", "white");
+			svg.style("opacity", 1)
+			   .style("pointer-events", null)
+			   .style("z-index", 1);
+		}
+		
+	});
 
+	/***** OrderLayerPanel *****/
+	$("#OrderLayerPanel > [data-dataType='graphList']").on("click", "[data-action]", function (e){			
+		// Define button action
+		var action = $(this).attr("data-action");
+
+		// Define input text jquery selector
+		// change input text value
+		switch(action){
+			case "add":
+				var inputText = $(this).next('a').next('input');
+				inputText.val(function (){
+					return parseInt($(this).val(), 10) + 1;
+				});
+				break;
+			case "minus":
+				var inputText = $(this).next('input');
+				inputText.val(function (){
+					return parseInt($(this).val(), 10) - 1;
+				});				
+				break;
+		}
+		
+		// get z_index
+		var z_index = inputText.val();
+
+		// change placehold value
+		inputText.attr("placeholder", z_index);
+
+		// svg move up!
+		var svgClass = inputText.attr("data-graphClass");
+		var svgName = inputText.attr("data-graphName");
+		var svgSelector = "svg." + svgClass + "[name='" + svgName + "']";
+
+		d3.select("#map")
+		   .select(".leaflet-map-pane")
+		   .select(".leaflet-objects-pane")
+		   .select(".leaflet-overlay-pane")
+		   .select(svgSelector)
+		   .style("z-index", z_index);
+	});
+
+	$("#OrderLayerPanel > [data-dataType='graphList']").on("change", "input[type='text']", function (e){			
+		// Define input text
+		var inputText = $(this);
+
+		// get z_index
+		var z_index = inputText.val();
+
+		// change placehold value
+		inputText.attr("placeholder", z_index);
+
+		// svg move up!
+		var svgClass = inputText.attr("data-graphClass");
+		var svgName = inputText.attr("data-graphName");
+		var svgSelector = "svg." + svgClass + "[name='" + svgName + "']";
+
+		d3.select("#map")
+		   .select(".leaflet-map-pane")
+		   .select(".leaflet-objects-pane")
+		   .select(".leaflet-overlay-pane")
+		   .select(svgSelector)
+		   .style("z-index", z_index);
+	});
+	
 	/***** AddTablePanel *****/
 	$("#csvSelect").on("click", function (e){
 		e.preventDefault(); // prevent navigation to "#"
@@ -341,7 +547,7 @@ $(function(){
 			}
 		}
 
-		// parse csv files
+		// parse table files
 		for(var i=0, max=tableFiles.length; i<max; i++){
 			// run FileReader onload ajax event by using immediate function 
 			(function (tableFile){					
@@ -350,21 +556,36 @@ $(function(){
 	  			var fileExt  = tableFile.name.split('.').pop();
 				var reader = new FileReader();										
 				reader.readAsText(tableFile, "UTF-8");
-				console.log(fileExt);
+				
 				reader.onload = function(e){
 		  			var tableContent = e.target.result;
 		  			
 		  			if(fileExt === "csv"){
-		  				var table = wendy.csv.parse(tableContent);			
+		  				var table = wendy.csv.parse(tableContent);
+						wendy.user.table[fileName] = table;
+		  			
 		  			}else if(fileExt === "txt"){
-		  				var table = wendy.tsv.parse(tableContent);
+		  				var table = wendy.tsv.parse(tableContent);						
+						wendy.user.table[fileName] = table;
+		  			
 		  			}else{
 		  				alert("您所選的檔案格式，本系統目前不支援!");
 		  				return 0;
 		  			}
 
 		  			var columnHeader = Object.keys(table[0]);			  			
+		  			wendy.user.tableField[fileName] = columnHeader;
 		  			
+		  			/**** add options to ChoroplethPanel and InterpolationPanel ****/
+		  			// Choropleth table file options
+		  			d3.select("#ChoroplethPanel").select("[data-dataType='table']")
+		  				.append("div")
+		  				.attr("class", "item")
+		  				.attr("data-file", fileName)
+		  				.text(fileName)	  			
+
+
+		  			/**** Show table Content ****/ 
 		  			d3.select('#tableList')
 	  				  .select(".FileContent")
 	  				  .append("h2")
@@ -464,7 +685,7 @@ $(function(){
 		  			var content = reader.result;
 		  			switch(fileExt){
 		  				case("topojson"):
-				  			var topo = wendy.topo.parse(content);
+				  			var topo = wendy.topo.parse(content);				  			
 				  			console.log(topo);
 				  			break;
 				  		
@@ -505,4 +726,276 @@ $(function(){
 		}
 	
 	});// end of drop file into box
+
+	/***** ChoroplethPanel *****/
+	// 1.select vector file	and create vector joined field options
+	$("#ChoroplethPanel [data-dataType='topo']").on("click", "[data-file]", function (){
+		// set button style
+		$("#ChoroplethPanel [data-dataType='topo'] [data-file]")
+			.css("background-color", "white")
+			.css("color", "gray");
+
+		$(this).css("background-color", "gray")
+				.css("color", "white");
+		
+		// remove exist vector fields
+		$("#ChoroplethPanel [data-dataType='topoField'] div[data-field]").remove();
+		
+		// storage plot Chopleth variaborle
+		var topoName = $(this).attr("data-file");	
+		choropleth.topoName = topoName;	
+		
+		/*** check vector file is wendy's or user's ***/
+		var topoClass = $(this).attr("class").split(" ")[0];
+		
+		/// topo from wendy built-In
+		if(topoClass === "wendy"){		
+			// storage plot Choropleth variable
+			choropleth.isTopoFromWendy = true;
+			
+			// Create vector joined fields
+			var topoFields = wendy.builtIn.topoField[$(this).attr("data-file")];
+			
+			if(topoFields === undefined){			
+				d3.json(wendy.topo.getTopoUrl(topoName), function (json){					
+					var topoFile   = topo.parse(json),
+						topoFields = Object.keys(topoFile[0].properties);				
+
+					for(var i=0, max=topoFields.length; i<max; i++){
+						d3.select("#ChoroplethPanel").select("[data-dataType='topoField']")
+							.append("div")
+							.attr("class", "item")
+							.attr("data-field", topoFields[i])
+							.text(topoFields[i]);
+					}
+
+					// save into grobal variable 
+					wendy.builtIn.topo[topoName] = topoFile;				
+					wendy.builtIn.topoField[topoName] = topoFields;
+				});
+				// end event 
+				return 0;		
+			}
+			for(var i=0, max=topoFields.length; i<max; i++){
+				d3.select("#ChoroplethPanel").select("[data-dataType='topoField']")
+					.append("div")
+					.attr("class", "item")
+					.attr("data-field", topoFields[i])
+					.text(topoFields[i]);
+			}
+		
+		}else{
+			/// topo from user			
+			// storage plot Choropleth variable
+			choropleth.isTopoFromWendy = false;
+
+			// Create vector joined fields
+			var topoFile   = wendy.user.topo[topoName],
+				topoFields = Object.keys(topoFile[0].properties);				
+
+			for(var i=0, max=topoFields.length; i<max; i++){
+				d3.select("#ChoroplethPanel").select("[data-dataType='topoField']")
+					.append("div")
+					.attr("class", "item")
+					.attr("data-field", topoFields[i])
+					.text(topoFields[i]);
+			}
+		}
+
+	});
+
+	// 2.select table file and create table joined field options - *use .on() delegated events 
+	$("#ChoroplethPanel [data-dataType='table']").on("click", "div[data-file]", function (e){
+		// set button style
+		$("#ChoroplethPanel [data-dataType='table'] div[data-file]")
+			.css("background-color", "white")
+			.css("color", "gray");
+
+		$(this).css("background-color", "gray")
+				.css("color", "white");
+
+		// remove exist table joined fields options and output field options
+		$("#ChoroplethPanel [data-dataType='tableField'] div[data-field]").remove();
+		$("#ChoroplethPanel [data-dataType='outputField'] div[data-field]").remove();
+
+		// storage plot Chopleth variaborle
+		choropleth.tableName = $(this).attr("data-file");
+
+		// Create table joined field options and output field options			  			
+		var tableFields = wendy.user.tableField[$(this).attr("data-file")];
+		for(var j=0, maxCol=tableFields.length; j<maxCol; j+=1){			
+			// joined field options
+			d3.select("#ChoroplethPanel").select("[data-dataType='tableField']")
+			.append("div")
+			.attr("class", "item")
+			.attr("data-field", tableFields[j])
+			.text(tableFields[j]);
+
+			// output field options
+			d3.select("#ChoroplethPanel").select("[data-dataType='outputField']")
+			.append("div")
+			.attr("class", "item")
+			.attr("data-field", tableFields[j])
+			.text(tableFields[j]);	  				
+		}		
+	});
+
+	// 3-1.select topo field
+	$("#ChoroplethPanel [data-dataType='topoField']").on("click", "[data-field]", function(){
+		// set button style
+		$("#ChoroplethPanel [data-dataType='topoField'] [data-field]")
+			.css("background-color", "white")
+			.css("color", "gray");
+		$(this).css("background-color", "gray")
+			.css("color", "white");
+
+		// storage plot Chopleth variaborle
+		choropleth.topoJoinField = $(this).attr("data-field");
+	});
+
+	// 3-2.select table field
+	$("#ChoroplethPanel [data-dataType='tableField']").on("click", "[data-field]", function(){
+		// set button style
+		$("#ChoroplethPanel [data-dataType='tableField'] [data-field]")
+			.css("background-color", "white")
+			.css("color", "gray");
+		$(this).css("background-color", "gray")
+			.css("color", "white");
+
+		// storage plot Chopleth variaborle
+		choropleth.tableJoinField = $(this).attr("data-field");
+	});
+
+	// 4.select outputField
+	$("#ChoroplethPanel [data-dataType='outputField']").on("click", "[data-field]", function(){
+		// set button style
+		$("#ChoroplethPanel [data-dataType='outputField'] [data-field]")
+			.css("background-color", "white")
+			.css("color", "gray");
+		$(this).css("background-color", "gray")
+			.css("color", "white");
+
+		// storage plot Chopleth variaborle
+		choropleth.tableOutputField = $(this).attr("data-field");
+	});
+
+	// 5.plot Choropleth
+	$("#ChoroplethPanel [data-action='plot']").on("click", function(){
+		// define topo join table function's variable
+		var topoName  	     = choropleth.topoName || false,
+			topoJoinField    = choropleth.topoJoinField || false,
+			tableName        = choropleth.tableName || false,
+			tableJoinField   = choropleth.tableJoinField || false,
+			tableOutputField = choropleth.tableOutputField || false;
+
+		// check all options are all selected
+		if(!topoName){
+			alert("請選擇向量資料");
+			return 0;
+		}
+		if(!tableName){
+			alert("請選擇屬性資料");
+			return 0;
+		}
+		if(!topoJoinField){
+			alert("請選擇要進行合併的向量欄位");
+			return 0;
+		}
+		if(!tableJoinField){
+			alert("請選擇要進行合併的屬性欄位");
+			return 0;
+		}
+		if(!tableOutputField){
+			alert("請選擇要畫圖的屬性欄位");
+			return 0;
+		}
+
+		// define svg variable
+		var newTopoName = tableName + "_" + tableOutputField;
+		var svgSelector ="svg.user[name='"+ newTopoName +"']";
+		var svg = d3.select("#map")
+					.select(".leaflet-map-pane")
+					.select(".leaflet-objects-pane")
+					.select(".leaflet-overlay-pane")
+					.select(svgSelector);
+		
+		// check svg is exist or not
+		if(svg[0][0] !== null){
+			alert("您所選的資料以繪製完成,\n" +
+				  "請點選圖層清單進行確認!");
+			return 0;
+		}
+
+		// get table and topo object
+		var table = wendy.user.table[tableName];		
+		if(choropleth.isTopoFromWendy){
+			var topo = wendy.builtIn.topo[topoName];
+		}else{
+			var topo = wendy.user.topo[topoName];
+		}
+
+		// create topo file has table properties
+		var topoShape = wendy.topo.joinCsv({
+							csv            : table,
+							topo           : topo,
+							topoJoinField  : topoJoinField,
+							csvJoinField   : tableJoinField,
+							joinSingle	   : true,
+							outputField    : tableOutputField
+						});
+		
+		// set progress bar
+		$("#progressBar").show();
+		$("#progressBar div.bar").attr("style", "width:50%").text("開始畫圖");
+
+		// polt choropleth		
+		wendy.graph.plotChoropleth(map, topoShape, tableOutputField, newTopoName);
+
+		// save choropleth selector
+		wendy.user.choropleth[newTopoName] = d3.select("#map")
+											   .select(".leaflet-map-pane")
+											   .select(".leaflet-objects-pane")
+											   .select(".leaflet-overlay-pane")
+											   .select(svgSelector)
+											   .style("z-index", 1);
+
+		// create button at UserPanel		
+		d3.select("#UserPanel [data-graphType='choropleth']")
+			.append("div").attr("class", "item")
+			.attr("data-graphName", newTopoName)
+			.text(newTopoName)
+			.style("background-color", "gray")
+			.style("color", "white");
+
+		//set progress bar		
+		$("#progressBar div.bar").attr("style", "width:100%").text("");
+		$("#progressBar").fadeOut();
+
+	})
+	.mouseover(function(){
+		$(this).css("background-color", "gray")
+				.css("color", "white");
+	})
+	.mouseout(function(){
+		$(this).css("background-color", "white")
+				.css("color", "gray");
+	})
+	.mousedown(function(){
+		$(this).css("background-color", "#CC0066")
+			.css("color", "white");
+	});
+
+	// hide and show file and field options
+	$("#ChoroplethPanel .header").toggle(
+		function (argument){
+			$(this).next('div').slideUp();
+		},
+		function (argument){
+			$(this).next('div').slideDown();
+		}
+	)
+	.mouseover(function (){
+			$(this).css("cursor", "pointer");
+	});
+	
 });

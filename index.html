@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Tw">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,27 +28,35 @@
 </head>
 <body>
 
-<!-- Menu bar -->
-<div class="ui large top attached tabular menu">
-	<a class="active item">
-		<i class="home icon"></i> Wendy
+<!-- navi bar -->
+<div id="naviBar" class="ui fluid inverted menu">
+	<a class="item" target="_blank" href="http://wendy.rcec.sinica.edu.tw/wendy/tw/">
+		<i class="large home icon"></i> Wendy&nbsp首頁
 	</a>
-	<a class="item">
-		<i class="mail icon"></i> DataBase
+	<a class="item" target="_blank" href="http://wendy.rcec.sinica.edu.tw/wendy/tw/kmz.php">
+		<i class="large map marker icon"></i> 地圖套用
 	</a>
-	<a class="item">
-		<i class="user icon"></i> plotting
+	<a class="item" target="_blank" href="http://exposurelab.github.io/WendySoftwareDoc/">
+		<i class="large book icon"></i> GIS 軟體工具介紹與連結
+	</a>
+	<a class="item" target="_blank" href="http://exposurelab.github.io/WendySoftwareManual/">
+		<i class="large book icon"></i> GIS軟體實務操作
 	</a>
 </div>
 
+<!-- panels -->
 <div class="container-fluid">
 	<div id="ToolMenu" class="row">		
-		<div class="col-md-12">			
+		<div class="col-md-12">
 			<div class="large left aligned ui icon header">				
 				<a id="ListLayer" class="ui large black label button">
 					<i class="list layout icon"></i>圖層清單
 				</a>
 				
+				<a id="OrderLayer" class="ui large black label button">
+					<i class="ordered list icon"></i>圖層順序
+				</a>
+
 				<a id="AddTable" class="ui large black label button">
 					<i class="add sign box icon"></i>新增屬性
 				</a>
@@ -65,9 +73,9 @@
 					<i class="photos basic icon"></i>畫內插圖
 				</a>
 				
-				<a id="Analysis" class="ui large black label button">
+<!-- 				<a id="Analysis" class="ui large black label button">
 					<i class="wrench icon"></i>分析圖層
-				</a>	
+				</a>	 -->
 			</div>
 		</div>
 	</div>
@@ -112,32 +120,36 @@
 					
 					<div class="ui fluid selection list LayerMenu">
 						<div class="header"><i class="tags icon"></i>面量圖</div>			
-						<div class="ui fluid selection list">
-							
-						</div>			
+						<div data-graphType="choropleth" class="ui fluid selection list"></div>			
 						
 						<div class="header"><i class="tags icon"></i>內插圖</div>
-						<div class="ui fluid selection list">
-							
-						</div>	
+						<div data-graphType="interpolation" class="ui fluid selection list"></div>	
 					</div>
 				</div>
 			</div>
 			
+			<div id="OrderLayerPanel" class="row">
+				<div class="ui small inverted teal block header LayerHeader">
+					調整圖層顯示順序
+				</div>				
+				<!-- svg List  -->
+				<div data-dataType="graphList" class="ui fluid selection list LayerMenu"></div>
+			</div>
+
 			<div id="AddTablePanel" class="row">
 				<div class="ui small inverted teal block header LayerHeader">
 					<i class="settings icon"></i>新增屬性資料
 				</div>
 				
 				<div class="ui fluid list LayerMenu">
+					<!-- AddTable step-1 -->
 					<div class="header"><i class="setting icon"></i>
-						1. 請依據檔案類型選擇屬性資料
-					</div>				
-					
+						步驟1、 請依據檔案類型選擇屬性資料
+					</div>					
 					<div class="ui fluid selection list">
 						<input id="csvFiles" type="file" multiple accept=".csv" style="display:none">
 						<div id="csvSelect" class="item">
-							逗點分隔(.csv)							
+							逗點分隔(.csv)					
 						</div>
 						
 						<input id="tsvFiles" type="file" multiple accept=".txt" style="display:none">
@@ -145,11 +157,11 @@
 							空白分隔(.txt)
 						</div>		
 					</div>	
-				
-					<div class="header"><i class="setting icon"></i>
-						2.解析表格資料
-					</div>
 					
+					<!-- AddTable step-2 -->
+					<div class="header"><i class="setting icon"></i>
+						步驟2、 解析表格資料
+					</div>					
 					<div class="ui fluid selection list">			
 						<div id="tableParse" class="item">
 							解析表格
@@ -179,6 +191,64 @@
 				<div class="ui small inverted teal block header LayerHeader">
 					<i class="settings icon"></i>面量圖繪製選項
 				</div>
+				
+				<!-- Plot Choropleth Steps -->
+				<div class="ui fluid list LayerMenu">					
+					<!-- Plot Choropleth Step-1 -->
+					<div class="header"><i class="setting icon"></i>
+						步驟1、 請選擇向量資料
+					</div>				
+					<div data-dataType="topo" class="ui fluid selection list">
+						<div data-file="twCounty_before2010" class="wendy item">
+							(內建圖層) 台灣縣市圖層 ─ 五都合併前
+						</div>
+						<div data-file="twCounty_after2010" class="wendy item">
+							(內建圖層) 台灣縣市圖層 ─ 五都合併後
+						</div>		
+					</div>
+					
+					<!-- Plot Choropleth Step-2 -->
+					<div class="header"><i class="setting icon"></i>
+						步驟2、 請選擇屬性資料
+					</div>				
+					<div data-dataType="table" class="ui fluid selection list">				
+					</div>
+
+					<!-- Plot Choropleth Step-3 -->
+					<div class="header"><i class="setting icon"></i>
+						步驟3、 請選擇要合併的欄位 (縣市、鄉鎮名稱)
+					</div>	
+					<div class="ui fluid list">
+						<div class="header">
+							&nbsp&nbsp 向量資料欄位
+						</div>	
+						<div data-dataType="topoField" class="ui fluid selection list">
+						</div>
+
+						<div class="header">
+							&nbsp&nbsp 屬性資料欄位
+						</div>
+						<div data-dataType="tableField" class="ui fluid selection list">
+						</div>
+					</div>					
+					
+					<!-- Plot Choropleth Step-4 -->
+					<div class="header"><i class="setting icon"></i>
+						步驟4、 請選擇要畫圖的屬性欄位 (數值)
+					</div>				
+					<div data-dataType="outputField" class="ui fluid selection list">		
+					</div>
+					
+					<!-- Plot Choropleth Step-5 -->
+					<div class="header"><i class="setting icon"></i>
+						步驟5、 請點擊開始畫圖按鈕
+					</div>				
+					<div class="ui fluid selection list">
+						<div data-action="plot" class="item">
+							開始畫圖						
+						</div>
+					</div>
+				</div>
 			</div>
 
 			<div id="InterpolationPanel" class="row">
@@ -192,7 +262,7 @@
 					<i class="settings icon"></i>分析工具
 				</div>
 			</div>
-		</div>
+		</div><!-- End of panels -->
 
 		<!-- Map -->
 		<div id="map" class="col-md-9"></div>
@@ -224,7 +294,7 @@
 				<div class="ui small inverted red block header LayerHeader ToolTip">
 					<i class="info icon"></i>面量圖資訊			
 				</div>
-
+							
 			</div><!-- end of row-->
 		</div>
 
@@ -239,13 +309,13 @@
 		</div>
 
 		<!-- Analysis Tool Options -->
-		<div id="AnalysisOptions" class="col-md-9" style="display:none">
+ 		<div id="AnalysisOptions" class="col-md-9" style="display:none">
 			<div class="row">
 				<div class="ui small inverted red block header LayerHeader ToolTip">
 					<i class="info icon"></i>分析工具資訊			
 				</div>
 
-			</div><!-- end of row-->
+			</div><!-- end of row -->
 		</div>
 
 	</div>
