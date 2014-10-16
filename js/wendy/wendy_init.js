@@ -7,7 +7,8 @@ $(function(){
 
 	// Define button selected flag
 	var csvFlag   	  = 0,
-		tsvFlag       = 0,		
+		tsvFlag       = 0,
+		orderLayer    = {},	
 		choropleth    = {},
 		interpolation = {};
 	
@@ -46,24 +47,12 @@ $(function(){
 		// show the relative "right" panels
 		$(".col-md-9").hide();		
 		switch(this.id){
-			// case "ListLayer":
-			// 	$("#map").show();
-			// 	break;
-			// case "OrderLayer":
-			// 	$("#map").show();
-			// 	break;
 			case "AddTable":
 				$("#tableList").show();
 				break;
 			case "AddTopo":
 				$("#vectorList").show();
 				break;
-			// case "Choropleth":
-			// 	$("#ChoroplethOptions").show();
-			// 	break;
-			// case "Interpolation":
-			// 	$("#InterpolationOptions").show();
-			// 	break;
 			case "Analysis":
 				$("#AnalysisOptions").show();
 				break;
@@ -236,7 +225,8 @@ $(function(){
 			// 2.2 if svg is exist
 			svg.style("opacity", 1)
 			   .style("pointer-events", null)
-			   .style("z-index", 1);
+			   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
+			console.log(orderLayer[$(this).attr("data-graphName")]);
 		}// End of button toggle on
 
 		else{
@@ -354,7 +344,7 @@ $(function(){
 			else{
 				svg.style("opacity", 1)
 			   	   .style("pointer-events", null)
-			   	   .style("z-index", 1);
+			   	   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
 			}
 		
 		},// end of toggle on 
@@ -412,7 +402,7 @@ $(function(){
 			$(this).css("background-color", "rgb(128, 128, 128)").css("color", "white");
 			svg.style("opacity", 1)
 			   .style("pointer-events", null)
-			   .style("z-index", 1);
+			   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
 		}
 		
 	});
@@ -439,9 +429,10 @@ $(function(){
 				break;
 		}
 		
-		// get z_index
-		var z_index = inputText.val();
-
+		// get z_index and save
+		var z_index = inputText.val();		
+		orderLayer[inputText.attr("data-graphName")] = z_index
+		
 		// change placehold value
 		inputText.attr("placeholder", z_index);
 
@@ -456,14 +447,16 @@ $(function(){
 		   .select(".leaflet-overlay-pane")
 		   .select(svgSelector)
 		   .style("z-index", z_index);
+
 	});
 
 	$("#OrderLayerPanel > [data-dataType='graphList']").on("change", "input[type='text']", function (e){			
 		// Define input text
 		var inputText = $(this);
 
-		// get z_index
+		// get z_index and save
 		var z_index = inputText.val();
+		orderLayer[inputText.attr("data-graphName")] = z_index;
 
 		// change placehold value
 		inputText.attr("placeholder", z_index);

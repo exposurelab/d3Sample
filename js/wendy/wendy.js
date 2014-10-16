@@ -1171,7 +1171,7 @@
 		}
 
 		// add legend
-		wendy.graph.legend(L_map, outputField, dataset.quantile(valueList), color);
+		wendy.graph.legend(L_map, outputField, dataset.quantile(valueList), color, svgName);
 	
 	}; // End of wendy.topo.plotOnLeaflet()
 
@@ -1335,29 +1335,39 @@
 		}
 
 		// add legend
-		wendy.graph.legend(L_map, outputField, dataset.quantile(valueList), color);
+		wendy.graph.legend(L_map, outputField, dataset.quantile(valueList), color, svgName);
 	
 	}; // End of wendy.topo.plotOnLeaflet()
 
-	wendy.graph.legend = function(L_map, outputField, quantileDataset, color){
+	wendy.graph.legend = function(L_map, outputField, quantileDataset, color, svgName){
+		// Define function arguments
+		svgName = svgName || outputField;
+
 		// hide existing legend
 		var legend = d3.select("#map")
 					   .select("div.leaflet-control-container")
 					   .select("div.leaflet-bottom.leaflet-right")
-					   .select("div.info.legend.leaflet-control");		
-		if(legend){	legend.remove();}
+					   .selectAll("div.info.legend.leaflet-control");		
+		if(legend){	legend.style("display", "none");}
 
 		// refer new legend object
 		legend = L.control({position: 'bottomright'});
 
 		legend.onAdd = function (L_map) {
-		    var div = L.DomUtil.create('div', 'info legend'),
-		        grades = quantileDataset,
+		    // create legend container and set class attribute
+		    if(svgName === outputField){
+		    	var div = L.DomUtil.create('div', 'info legend wendy');
+		    }else{
+		    	var div = L.DomUtil.create('div', 'info legend user');
+		    }
+
+		    // Define variable
+		    var grades = quantileDataset,
 		        labels = [];
 		    
-		    // add name attribut to lengend Node
-		    d3.select(div).attr("name", outputField);		    
-		    
+		    // add legend container's name attributes
+		   	$(div).attr("name", svgName);		   
+		   		    
 		    // loop through our density intervals and generate a label with a colored square for each interval
 		    var star, stop;
 		    div.innerHTML = "<h3 class='legendTitle'>" + outputField + "</h3>";
@@ -1406,12 +1416,12 @@
 			.style("opacity", 0);
 
 		// hide legend
+		var legendSelector = "div."+ graphClass + "[name='" + graphName +"']";
 		d3.select("#map")
 		   .select("div.leaflet-control-container")
 		   .select("div.leaflet-bottom.leaflet-right")
-		   .selectAll("div.info.legend.leaflet-control")
+		   .select(legendSelector)
 		   .style("display", "none");
-
 	}; 
 	
 	wendy.graph.removeByClass = function (className){
@@ -1437,6 +1447,4 @@
 		if(legend){	legend.remove();}
 	};
 
-	/*********************private method**********************************************/
-	// @test
 }(window));
