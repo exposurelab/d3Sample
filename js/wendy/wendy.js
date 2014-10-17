@@ -1125,9 +1125,9 @@
   			}
   		});  		
 		
-		var color = d3.scale.quantize()
+		var color = d3.scale.threshold()
 					.domain(dataset.quantile(valueList))
-					.range(wendy.color.brewer[colorSelector][nClass]);
+					.range(wendy.color.brewer[colorSelector][nClass + 1]);
 
 		// configure svg graph color and outline
 		features.attr("d", path)		
@@ -1251,9 +1251,9 @@
   			}
   		});  		
 		
-		var color = d3.scale.quantize()
+		var color = d3.scale.threshold()
 					.domain(dataset.quantile(valueList))
-					.range(wendy.color.brewer[colorSelector][nClass]);
+					.range(wendy.color.brewer[colorSelector][nClass + 1]);
 
 		// configure svg graph color and outline
 		features.attr("d", path)		
