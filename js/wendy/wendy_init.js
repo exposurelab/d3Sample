@@ -18,6 +18,13 @@ $(function(){
 						attribution: '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a>', 
 						maxZoom: 18}));
 
+	/** Initialize Taiwan county Boundary **/
+	d3.json("Data/json/twCounty_after2010.topo.json", function(twJson){
+		var twCountyBoundary = topo.parse(twJson);
+		wendy.graph.plotTwCounty(map, twCountyBoundary);
+	});
+
+
 	/** Initialize all element **/
 	// ListLayer Button active state
 	$("#ListLayer").addClass("red").removeClass("black");

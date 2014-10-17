@@ -1339,6 +1339,98 @@
 	
 	}; // End of wendy.topo.plotOnLeaflet()
 
+	wendy.graph.plotTwCounty = function (L_map, topo, outputField){
+		
+		// Define reference wendy module
+		var topoShape = wendy.topo;
+		var dataset = wendy.dataset;
+
+		// initialize and check argument
+		var L_map		  = L_map || false,
+			topo          = topo || false,
+			outputField	  = outputField || "COUNTYNAME";
+	
+		if(!L_map){
+			throw new Error("wendy.plot.topoMap Error:\n" + 
+							"please input Leaflet map Object! \n" +
+							"type is 'object'");
+			return 0;
+		}
+
+		if(!topo){
+			throw new Error("wendy.plot.topoMap Error:\n" + 
+							"please input topojson or topo Object! \n" +
+							"type is 'topojson' or 'object'");
+			return 0;
+		}
+
+		if(!outputField){
+			throw new Error("wendy.plot.topoMap Error:\n" + 
+							"please input output field name! \n"+
+							"type is 'string'");
+			return 0;
+		}
+		
+		// Add a svg to Leaflet's overlay pane
+		var svg = d3.select(L_map.getPanes().overlayPane)
+					.append("svg")
+					.attr("name", "台灣縣市邊界")
+					.attr("class", "wendy")
+					.style("z-index", "99")
+					.style("pointer-events", "none");
+
+		var	g   = svg.append("g")
+					 .attr("class", "leaflet-zoom-hide");
+
+		// Adapt Leaflet’s API to fit D3 by implementing
+		// a custom geometric transformation
+		function projectPoint(x, y) {
+		  var point = L_map.latLngToLayerPoint(new L.LatLng(y, x));
+		  this.stream.point(point.x, point.y);
+		}
+
+		var projection = d3.geo.transform({point: projectPoint}),
+			path 	   = d3.geo.path().projection(projection);
+
+		// Create path elements for each of the features by using D3
+		var features = g.selectAll("path")
+    					.data(topo)
+  						.enter()
+  						.append("path");
+  		
+		// configure svg graph color and outline
+		features.attr("d", path)		
+				.attr("fill-opacity", 0)
+				.attr("stroke", "#333333")
+				.attr("stroke-width", "1");
+
+  		// Part-II. Fitting SVG to a Layer
+  		// Computing the projected bounding box of features by
+  		// using custom transform to convert the longitude and latitude to pixels
+		L_map.on('viewreset', reset);
+		reset();
+
+		function reset(){
+			var bounds      = path.bounds({
+											type: "FeatureCollection",
+											features: topo
+										  }),
+				topLeft     = bounds[0],
+				bottomRight = bounds[1];
+
+			// adjust svg position
+			svg .attr("width", bottomRight[0] - topLeft[0])
+			    .attr("height", bottomRight[1] - topLeft[1])
+			    .style("left", topLeft[0] + "px")
+			    .style("top", topLeft[1] + "px");
+
+			g.attr("transform", "translate(" + -topLeft[0] + "," + -topLeft[1] + ")");
+
+			//  resize svg graph
+			features.attr("d", path);
+		}	
+	}; // End of wendy.topo.plotOnLeaflet()
+
 	wendy.graph.legend = function(L_map, outputField, quantileDataset, color, svgName){
 		// Define function arguments
 		svgName = svgName || outputField;
