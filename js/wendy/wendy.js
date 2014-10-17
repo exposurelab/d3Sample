@@ -1126,7 +1126,7 @@
   		});  		
 		
 		var color = d3.scale.threshold()
-					.domain(dataset.quantile(valueList))
+					.domain(dataset.quantile(valueList, nClass))
 					.range(wendy.color.brewer[colorSelector][nClass + 1]);
 
 		// configure svg graph color and outline
@@ -1171,7 +1171,7 @@
 		}
 
 		// add legend
-		wendy.graph.legend(L_map, outputField, dataset.quantile(valueList), color, svgName);
+		wendy.graph.legend(L_map, outputField, dataset.quantile(valueList, nClass), color, svgName);
 	
 	}; // End of wendy.topo.plotOnLeaflet()
 
@@ -1252,7 +1252,7 @@
   		});  		
 		
 		var color = d3.scale.threshold()
-					.domain(dataset.quantile(valueList))
+					.domain(dataset.quantile(valueList, nClass))
 					.range(wendy.color.brewer[colorSelector][nClass + 1]);
 
 		// configure svg graph color and outline
@@ -1335,7 +1335,7 @@
 		}
 
 		// add legend
-		wendy.graph.legend(L_map, outputField, dataset.quantile(valueList), color, svgName);
+		wendy.graph.legend(L_map, outputField, dataset.quantile(valueList, nClass), color, svgName);
 	
 	}; // End of wendy.topo.plotOnLeaflet()
 
@@ -1456,7 +1456,7 @@
 		    // Define variable
 		    var grades = quantileDataset,
 		        labels = [];
-		    
+		    console.log("class Num", grades);
 		    // add legend container's name attributes
 		   	$(div).attr("name", svgName);		   
 		   		    

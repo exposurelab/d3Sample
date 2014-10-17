@@ -328,7 +328,7 @@ $(function(){
 							$("#progressBar div.bar").attr("style", "width:80%");
 							
 							// plot interpolation graph
-							wendy.topo.plotOnLeaflet(map, twGrid, "PM2.5");
+							wendy.topo.plotOnLeaflet(map, twGrid, "PM2.5", "PM2.5", 6, "OrRd");
 
 							// save svg graph
 							wendy.builtIn.kriging[svgName]
