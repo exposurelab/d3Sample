@@ -40,6 +40,11 @@
 
 	// colorbrewer's color sequence
 	wendy.color={
+		sequence: [ "YlGnBu", "YlGn", "OrRd",
+					"RdPu", "YlOrRd", "YlOrBr",
+					"Oranges", "Greens", "Reds",					
+				    "Blues"],
+
 		selector: [ "YlGn", "YlGnBu", "GnBu", 
 					"BuGn", "PuBuGn", "PuBu", 
 					"BuPu", "RdPu", "PuRd", 
@@ -1181,13 +1186,19 @@
 		var topoShape = wendy.topo;
 		var dataset = wendy.dataset;
 
+		// random color Selector number
+		var maxRandomNum = 9;  
+		var minRandomNum = 0;  
+		var randomNum = Math.floor(Math.random() * (maxRandomNum - minRandomNum + 1)) + minRandomNum;  
+		console.log(randomNum);
+
 		// initialize and check argument
 		var L_map		  = L_map || false,
 			topo          = topo || false,
 			outputField	  = outputField || false,
 			svgName       = svgName || outputField,
 			nClass        = nClass || 5,
-			colorSelector = colorSelector || "YlOrRd";
+			colorSelector = colorSelector || wendy.color.sequence[randomNum];
 	
 		if(!L_map){
 			throw new Error("wendy.plot.topoMap Error:\n" + 
