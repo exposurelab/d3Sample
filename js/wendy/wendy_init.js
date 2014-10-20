@@ -230,10 +230,14 @@ $(function(){
 				return 0;
 			}
 			// 2.2 if svg is exist
+			// show svg
 			svg.style("opacity", 1)
 			   .style("pointer-events", null)
 			   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
-			console.log(orderLayer[$(this).attr("data-graphName")]);
+			
+			// show legend
+			wendy.graph.showLegend();
+
 		}// End of button toggle on
 
 		else{
@@ -349,9 +353,13 @@ $(function(){
 			
 			// svg is exist
 			else{
+				// show svg
 				svg.style("opacity", 1)
 			   	   .style("pointer-events", null)
 			   	   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
+
+			   	// show legend
+				wendy.graph.showLegend();
 			}
 		
 		},// end of toggle on 
@@ -372,10 +380,10 @@ $(function(){
 		// toggle on
 		function (){
 			var svgName = this.id;
-			var svg = wendy.builtIn.kriging[svgName];
+			var svg = wendy.builtIn.kriging[svgName];	
 			if(svg === undefined){
-				// set progress bar
-				$("#progressBar").show();
+			// set progress bar			
+			$("#progressBar").show();
 				$("#progressBar div.bar").attr("style", "width:20%")
 										 .css("color", "white")
 										 .css("font-size", "1.2em")
@@ -385,7 +393,7 @@ $(function(){
 				var url = wendy.getCloudUrl("http://opendata.cwb.gov.tw/opendata/DIV2/O-A0001-001.xml");
 				d3.xml(url, "application/xml", function (xml){				
 					// set progress bar
-					$("#progressBar div.bar").attr("style", "width:40%")
+					$("#progressBar div.bar").attr("style", "width:50%")
 											 .css("color", "white")
 										     .css("font-size", "1.2em")
 										     .text("網格讀取中...請勿點擊其他按鈕...");
@@ -463,9 +471,13 @@ $(function(){
 
 			// svg is exist
 			else{
+				// show svg
 				svg.style("opacity", 1)
 			   	   .style("pointer-events", null)
 			   	   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
+
+			   	// show legend
+				wendy.graph.showLegend();
 			}
 		},// End of toggle on button
 
@@ -501,6 +513,9 @@ $(function(){
 			svg.style("opacity", 1)
 			   .style("pointer-events", null)
 			   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
+
+			// show legend
+			wendy.graph.showLegend();
 		}
 		
 	});
@@ -546,6 +561,9 @@ $(function(){
 		   .select(svgSelector)
 		   .style("z-index", z_index);
 
+		// show legend
+		wendy.graph.showLegend(svgName, svgClass);
+
 	});
 
 	$("#OrderLayerPanel > [data-dataType='graphList']").on("change", "input[type='text']", function (e){			
@@ -570,6 +588,9 @@ $(function(){
 		   .select(".leaflet-overlay-pane")
 		   .select(svgSelector)
 		   .style("z-index", z_index);
+
+		// show legend
+		wendy.graph.showLegend(svgName, svgClass);
 	});
 	
 	/***** AddTablePanel *****/

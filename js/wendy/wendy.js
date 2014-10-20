@@ -856,172 +856,6 @@
 	};
 
 	// @Graph plotting
-	wendy.topo.plotMap = function (topo, outputField, nClass, colorSelector, mapSelector){
-		/**
-		 * @topo
-		 *  .type   : string or object
-		 *  .content: topojson
-		 *
-		 * @outputField
-		 *  .type   : string
-		 *  .content: field which wanted to be plotting
-		 *
-		 * @nClass
-		 *  .type   : integer
-		 *  .content: number of classification in outputField
-		 *  .default: 5
-		 *  .option
-		 *
-		 * @colorSelector
-		 *  .type   : string
-		 *  .content: colorbrewer's name		 
-		 *  .default: OrRd
-		 *  .option
-		 *
-		 * @mapSelector 
-		 *  .type   : string
-		 *  .content: svg container css selector
-		 *  .default: 'div#map'
-		 *  .option
-		 *
-		 * @return value
-		 *  .content: - no return value
-		 *			  - a svg graph will be created at selector element(div#map)
-		 **/
-		
-		// initialize and check argument
-		var topo          = topo || false,
-			outputField	  = outputField || false,  
-			nClass        = nClass || 5,
-			colorSelector = colorSelector || "OrRd",
-			mapSelector   = mapSelector || "div#map";		
-		
-		if(!topo){
-			throw new Error("wendy.plot.topoMap Error:\n" + 
-							"please input topojson or topo Object! \n" +
-							"type is 'topojson' or 'object'");
-			return 0;
-		}
-
-		if(!outputField){
-			throw new Error("wendy.plot.topoMap Error:\n" + 
-							"please input output field name! \n"+
-							"type is 'string'");
-			return 0;
-		}
-		
-		// Create outputField data array
-		var dataArray = [];
-		for(var i=0, topoMax=topo.length; i<topoMax; i++){
-			var value = parseFloat(topo[i].properties[outputField]);
-			dataArray.push(value);
-		}
-		dataArray = dataArray.sort(d3.ascending);
-
-		//  Define svg canvas width and height
-		var margin = {top: 20, right: 20, bottom: 20, left: 20};		
-		
-		var width  = parseFloat(d3.select(mapSelector).style("width"))- margin.right - margin.left,
-			height = parseFloat(d3.select(mapSelector).style("height"))- margin.top  - margin.bottom;
-
-		//  Define map projection
-		var projection = d3.geo.mercator()
-							.center([120.9579531, 23.978567])
-							.scale(6000)
-							// .translate([width/2, height/2]);
-
-		// 	Define svg path properties
-		var path = d3.geo.path()
-						.projection(projection);
-
-		// 	Define svg color properties
-		var color = d3.scale.quantize()
-						.domain([	
-								  d3.quantile(dataArray, 0),
-								  d3.quantile(dataArray, 0.25),
-								  d3.quantile(dataArray, 0.5),
-								  d3.quantile(dataArray, 0.75),
-								  d3.quantile(dataArray, 1)							
-								])
-						.range(wendy.color.brewer[colorSelector][nClass]);
-
-		//    2-5: Define Map zoom function
-		var zoom = d3.behavior.zoom()
-						.translate([0, 0])
-						.scale(1)
-						.scaleExtent([1, 40])
-						.on("zoom", function(){
-			                var t = d3.event.translate;
-			                var s = d3.event.scale;
-
-			                var w_max = 0;
-			                var w_min = width * (1 - s);
-			                var h_max = height < s*width/2 ? s*(width/2-height)/2 : (1-s)*height/2;
-			                var h_min = height < s*width/2 ? -s*(width/2-height)/2-(s-1)*height : (1-s)*height/2;
-
-			                t[0] = Math.min(w_max, Math.max(w_min, t[0]));
-			                t[1] = Math.min(h_max, Math.max(h_min, t[1]));
-
-			                zoom.translate(t);
-			                g.attr("transform", "translate(" + t + ")scale(" + s + ")");
-			                g.selectAll("path").style("stroke-width", .5 / s + "px");
-		            	});
-
-		// Create svg object		
-		var svg = d3.select(mapSelector).append("svg")
-					.attr("width", width + margin.right + margin.left)
-					.attr("height", height + margin.top + margin.bottom)
-					.call(zoom);
-
-		var g = svg.append("g");
-		
-		// Plot topo map
-		g.selectAll("path")
-			.data(topo)
-			.enter()
-			.append("path") 
-			.attr("d", path)
-			.style("stroke", "gray")
-			.style("stroke-width", "1px")
-			.style("fill", function(topo){				
-				var value = topo.properties[outputField];
-				if(value){					
-					return color(value);				
-				}else{					
-					//行政區沒有數值，使用灰色表示 
-					return "#252525";
-				}
-			});
-
-		// zoom in
-        d3.select(window).on('resize', function() {
-                projection
-                    .scale(width/2/Math.PI)
-                    .translate([width/2, height/2]);
-
-                g.selectAll("path")
-                    .attr("d", path);
-            });			
-
-		// // add legend by using <sapn>
-		// var legend = d3.select("#legend")					  				  	
-		// 			   .append("ul")
-		// 			   .attr("class", "list-inline");
-		
-		// var keys = legend.selectAll('li.key')
-		// 			    .data(color.range())
-		// 			    .enter()
-		// 			  .append('li')
-		// 			    .attr('class', 'key')
-		// 			    .style('border-top-color', String)
-		// 			    .text(function(d) {
-		// 			        var r = color.invertExtent(d);
-		// 			        var formatNumber = d3.format(".0f");
-		// 			        return formatNumber(r[0]);
-		// 			    });			
-	
-	}; // End of wendy.plot.topoMap()
-
 	wendy.topo.plotOnLeaflet = function (L_map, topo, outputField, svgName, nClass, colorSelector, colorInverse){
 		/**
  		 * @L_map
@@ -1202,8 +1036,7 @@
 		// random color Selector number
 		var maxRandomNum = 9;  
 		var minRandomNum = 0;  
-		var randomNum = Math.floor(Math.random() * (maxRandomNum - minRandomNum + 1)) + minRandomNum;  
-		console.log(randomNum);
+		var randomNum = Math.floor(Math.random() * (maxRandomNum - minRandomNum + 1)) + minRandomNum; 
 
 		// initialize and check argument
 		var L_map		  = L_map || false,
@@ -1456,7 +1289,7 @@
 	}; // End of wendy.topo.plotOnLeaflet()
 
 	wendy.graph.legend = function(L_map, outputField, quantileDataset, color, svgName){
-		// Define function arguments
+		// initialize function arguments
 		svgName = svgName || outputField;
 
 		// hide existing legend
@@ -1480,7 +1313,7 @@
 		    // Define variable
 		    var grades = quantileDataset,
 		        labels = [];
-		    console.log("class Num", grades);
+		    
 		    // add legend container's name attributes
 		   	$(div).attr("name", svgName);		   
 		   		    
@@ -1562,5 +1395,72 @@
 		var legend = d3.select("div[class='info legend leaflet-control']");
 		if(legend){	legend.remove();}
 	};
+
+	wendy.graph.showLegend = function(){
+		// Define Containers
+		var   zIndexList = [],
+			svgNameList  = [],
+			svgClassList = [];
+
+		// define showing legend name and class
+		var legendName,
+			legendClass,
+			legendSelector; 
+		
+		// select all svg and legend
+		var svgList = d3.select("#map")
+					    .select(".leaflet-map-pane")
+					    .select(".leaflet-objects-pane")
+					    .select(".leaflet-overlay-pane")
+					    .selectAll("svg");	
+		
+		var legendList = d3.select("#map")
+		   				.select("div.leaflet-control-container")
+		   				.select("div.leaflet-bottom.leaflet-right")
+		   				.selectAll("div.info.legend.leaflet-control");
+
+		// hide all legends
+		legendList.style("display", "none");
+
+		// Get svg z-value except twBoundary
+		svgList.each(function (d, i){			
+			// Escape twBoundary
+			if(i===0){
+				return 0;
+			}
+
+			// Get svg attributes
+			var svg = $(this);
+			var svgName = svg.attr("name");
+			var svgClass = svg.attr("class");
+			var zIndex = svg.css("z-index");
+			svgNameList.push(svgName);
+			svgClassList.push(svgClass);
+			zIndexList.push(zIndex);
+		});
+
+		// get z-index Max position
+		var zIndexMax = d3.max(zIndexList);
+		var maxPos = zIndexList.indexOf(zIndexMax);
+		var maxPosList = [];
+		while(maxPos != -1){
+			maxPosList.push(maxPos);
+			maxPos = zIndexList.indexOf(zIndexMax, maxPos + 1);
+		}		
+		maxPos = maxPosList[maxPosList.length-1];
+		
+		// show maxPos legend
+		legendName = svgNameList[maxPos];
+		legendClass = svgClassList[maxPos];
+		legendSelector = "div.info.legend." + legendClass + "[name='"+ legendName +"']";
+
+		d3.select("#map")
+		  .select("div.leaflet-control-container")
+		  .select("div.leaflet-bottom.leaflet-right")
+		  .select(legendSelector)
+		  .style("display", "block");
+		
+	
+	}// End of wendy.graph.showLegend();
 
 }(window));
