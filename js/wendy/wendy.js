@@ -1022,7 +1022,7 @@
 	
 	}; // End of wendy.plot.topoMap()
 
-	wendy.topo.plotOnLeaflet = function (L_map, topo, outputField, svgName, nClass, colorSelector){
+	wendy.topo.plotOnLeaflet = function (L_map, topo, outputField, svgName, nClass, colorSelector, colorInverse){
 		/**
  		 * @L_map
 		 *  .type   : object
@@ -1056,6 +1056,12 @@
 		 *  .default: YlOrRd
 		 *  .option
 		 *
+		 * @colorInverse
+		 *  .type   : booling
+		 *  .content: colorbrewer's sequence would be inverse or not
+		 *  .default: false
+		 *  .option
+		 *
 		 * @return value
 		 *  .content: - no return value
 		 *			  - a svg graph will be created at selector element(div#map)
@@ -1072,6 +1078,7 @@
 			svgName		  = svgName || outputField, 
 			nClass        = nClass || 5,
 			colorSelector = colorSelector || "YlOrRd";
+			colorInverse  = colorInverse || false;
 	
 		if(!L_map){
 			throw new Error("wendy.plot.topoMap Error:\n" + 
@@ -1130,9 +1137,15 @@
   			}
   		});  		
 		
+		if(!colorInverse){
+			var colorSequence = wendy.color.brewer[colorSelector][nClass + 1];
+		}else{
+			var colorSequence = wendy.color.brewer[colorSelector][nClass + 1].reverse();
+		}
+
 		var color = d3.scale.threshold()
 					.domain(dataset.quantile(valueList, nClass))
-					.range(wendy.color.brewer[colorSelector][nClass + 1]);
+					.range(colorSequence);
 
 		// configure svg graph color and outline
 		features.attr("d", path)		

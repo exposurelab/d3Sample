@@ -328,7 +328,7 @@ $(function(){
 							$("#progressBar div.bar").attr("style", "width:80%");
 							
 							// plot interpolation graph
-							wendy.topo.plotOnLeaflet(map, twGrid, "PM2.5", "PM2.5", 6, "OrRd");
+							wendy.topo.plotOnLeaflet(map, twGrid, "PM2.5", "PM2.5", 7, "RdYlGn", true);
 
 							// save svg graph
 							wendy.builtIn.kriging[svgName]
@@ -364,29 +364,120 @@ $(function(){
 			// hide svg
 			svg.style("opacity", 0)
 			   .style("pointer-events", "none")
-			   .style("z-index", 0);
-			
+			   .style("z-index", 0);			
 		}
 	);
 
 	$("#temperature").toggle(
 		// toggle on
 		function (){
-			// data source: http://opendata.cwb.gov.tw/about.htm
-			var url = wendy.getCloudUrl("http://opendata.cwb.gov.tw/opendata/DIV2/O-A0001-001.xml");
-			d3.xml(url, "application/xml", function (xml){				
-				// parse xml to json format object
-				var xmlDoc = $.xml2json(xml);
+			var svgName = this.id;
+			var svg = wendy.builtIn.kriging[svgName];
+			if(svg === undefined){
+				// set progress bar
+				$("#progressBar").show();
+				$("#progressBar div.bar").attr("style", "width:20%")
+										 .css("color", "white")
+										 .css("font-size", "1.2em")
+										 .text("溫度資料讀取中...請勿點擊其他按鈕...");
 
+				// data source: http://opendata.cwb.gov.tw/about.htm
+				var url = wendy.getCloudUrl("http://opendata.cwb.gov.tw/opendata/DIV2/O-A0001-001.xml");
+				d3.xml(url, "application/xml", function (xml){				
+					// set progress bar
+					$("#progressBar div.bar").attr("style", "width:40%")
+											 .css("color", "white")
+										     .css("font-size", "1.2em")
+										     .text("網格讀取中...請勿點擊其他按鈕...");
 
-				console.log(xmlDoc);
-			});
-		},
+					d3.json("Data/json/twGrid.topo.json", function (twGrid){
+						// parse xml to json format object
+						var xmlDoc = $.xml2json(xml);
+						var xmlLocaltion = xmlDoc.location;
+						
+						// parse twGrid topojson
+						var twGrid = topo.parse(twGrid);
+
+						// set progress bar
+						$("#progressBar div.bar").attr("style", "width:60%").text("");
+
+						// Define kriging variable
+						var t = [],
+							x = [],
+							y = [],
+							model = "exponential",
+							sigma2 = 0,
+							alpha = 100,
+							variogram;
+
+						// Extract kriging variable from xml file
+						for(var i=0, maxSites=xmlLocaltion.length; i< maxSites; i+=1){
+							var lng = xmlLocaltion[i]["lon"],
+								lat = xmlLocaltion[i]["lat"],
+								temp = xmlLocaltion[i].weatherElement[3].elementValue["value"];
+							
+							x.push(lng);
+							y.push(lat);
+							t.push(temp);
+						}// End of for loop of xmlLocation
+						
+						// kriging training predicted function
+						variogram = kriging.train(t, x, y, model, sigma2, alpha);
+						
+						// set progress bar
+						$("#progressBar div.bar").attr("style", "width:70%").text("");
+
+						// add kriging predicted value into twGrid
+						for(var i=0, max=twGrid.length; i<max; i+=1){
+							var newX = twGrid[i]["properties"]["Lng"],
+								newY = twGrid[i]["properties"]["Lat"];
+							
+							twGrid[i]["properties"]["temperature"] 
+								= kriging.predict(newX, newY, variogram);
+						}
+						
+						// set progress bar
+						$("#progressBar div.bar").attr("style", "width:80%").text("");
+
+						// plot interpolation graph
+						wendy.topo.plotOnLeaflet(map, twGrid, "temperature", "temperature", 7, "RdYlBu", true);
+
+						// set progress bar
+						$("#progressBar div.bar").attr("style", "width:90%").text("");
+
+						// save svg graph
+						wendy.builtIn.kriging[svgName]
+							= d3.select(".leaflet-map-pane")
+								 .select(".leaflet-objects-pane")
+								 .select(".leaflet-overlay-pane")
+								 .select("svg.wendy[name='temperature']")
+								 .style("z-index", 1);
+
+						// set progress bar
+						$("#progressBar div.bar").attr("style", "width:100%");
+						$("#progressBar").fadeOut();
+					
+					});// End of twGrid load
+				});// End of xml load
+			}// End of svg not exist
+
+			// svg is exist
+			else{
+				svg.style("opacity", 1)
+			   	   .style("pointer-events", null)
+			   	   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
+			}
+		},// End of toggle on button
 
 		// toggle off
 		function (){
-			wendy.graph.removeAll();
-			console.log("remove!");
+			var svgName = this.id;
+			var svg = wendy.builtIn.kriging[svgName];
+			
+			// hide svg
+			svg.style("opacity", 0)
+			   .style("pointer-events", "none")
+			   .style("z-index", 0);		
 		}
 	);
 
