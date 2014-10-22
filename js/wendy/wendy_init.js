@@ -134,7 +134,7 @@ $(function(){
 
 	/***** WendyPanel *****/
 	// wendy Layer Options
-	$("#WendyPanel div.item").toggle(
+	$("#popIndex, #eduStatics").toggle(
 		function(){
 			$(this).css("background-color", "gray")
 					.css("color", "white");
@@ -195,220 +195,87 @@ $(function(){
 		var svg = wendy.builtIn.choropleth[outputField];
 
 		// button click event 
-		if($(this).css("color") === "rgb(128, 128, 128)"){
-			/// toggle on
-			//  1. set button style
-			$(this).css("background-color", "gray")
-					.css("color","white");
+		//  1. set button style
+		$(this).css("background-color", "gray")
+				.css("color","white");
 
-			// 2. identify if layer is exist or not
-			// 2-1. if svg is not exist
-			if(svg === undefined){
-				d3.csv(wendy.csv.getChoroplethUrl($(this).attr("data-dataSource")), function(table){
-					d3.json(topo.getTopoUrl("twCounty_after2010"), function(json){
-		  				var twCounty = topo.parse(json);
-		  				var twCounty = topo.joinCsv({
-							csv          : table,
-							topo         : twCounty,
-							topoJoinField: "COUNTYNAME",
-							csvJoinField : "COUNTYNAME",
-							joinSingle   : true,
-							outputField  : outputField,
-		  				});
-		  				// plot built-in choropleth
-		  				wendy.graph.plotChoropleth(map, twCounty, outputField);
-		  				
-		  				// save choropleth 
-		  				wendy.builtIn.choropleth[outputField]
-		  					 = d3.select(".leaflet-map-pane")
-								 .select(".leaflet-objects-pane")
-								 .select(".leaflet-overlay-pane")
-								 .select(svgSelector)
-								 .style("z-index", 1);
-					});// End of topo load
-				});// End of csv load
-				return 0;
-			}
-			// 2.2 if svg is exist
-			// show svg
-			svg.style("opacity", 1)
-			   .style("pointer-events", null)
-			   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
-			
-			// show legend
-			wendy.graph.showLegend();
+		// 2. identify if layer is exist or not
+		// 2-1) if svg is not exist
+		if(svg === undefined){
+			d3.csv(wendy.csv.getChoroplethUrl($(this).attr("data-dataSource")), function(table){
+				d3.json(topo.getTopoUrl("twCounty_after2010"), function(json){
+	  				var twCounty = topo.parse(json);
+	  				var twCounty = topo.joinCsv({
+						csv          : table,
+						topo         : twCounty,
+						topoJoinField: "COUNTYNAME",
+						csvJoinField : "COUNTYNAME",
+						joinSingle   : true,
+						outputField  : outputField,
+	  				});
+	  				// plot built-in choropleth
+	  				wendy.graph.plotChoropleth(map, twCounty, outputField);
+	  				
+	  				// save choropleth 
+	  				wendy.builtIn.choropleth[outputField]
+	  					 = d3.select(".leaflet-map-pane")
+							 .select(".leaflet-objects-pane")
+							 .select(".leaflet-overlay-pane")
+							 .select(svgSelector)
+							 .style("z-index", 1);
+				});// End of topo load
+			});// End of csv load
+			return 0;
+		}else{
+			alert("【" +outputField + "】 已經存在，請點選【圖層清單】操控圖層");
+		}	
 
-		}// End of button toggle on
-
-		else{
-			/// toggle off
-			//  1. set button style
-			$(this).css("background-color", "white")
-					.css("color", "gray");
-
-			//  2. hide svg
-			svg.style("opacity", 0)
-			   .style("pointer-events", "none")
-			   .style("z-index", 0);
-
-		}// End of button toggle off
 	});
 
-	$("#pm25").toggle(
-		// toggle on
-		function (){
-			var svgName = this.id;
-			var svg = wendy.builtIn.kriging[svgName];
-			if(svg === undefined){
-				// set progress bar
-				$("#progressBar").show();
-				$("#progressBar div.bar").attr("style", "width:10%");				
-				d3.csv("Data/csv/epa/EPA_AirStation.csv", function (airSite){				
-					
-					// set progress bar
-					$("#progressBar div.bar").attr("style", "width:30%")
-											 .css("color", "white")
-											 .css("font-size", "1.2em")
-											 .text("環保署資料下載中...請勿點擊其他按鈕...");
+	$("#pm25").on("click", function (){
+		// set button style
+		$(this).css("background-color", "gray")
+			   .css("color", "white");
 
-					// air quality data url
-					var aqxUrl="http://opendata.epa.gov.tw/ws/Data/AQX/?$orderby=SiteName&$skip=0&$top=1000&format=json";						
-					d3.json(wendy.getCloudUrl(aqxUrl), function (aqx){						
-						
-						// set progress bar
-						$("#progressBar div.bar").attr("style", "width:45%")
-												 .css("color", "white")
-												 .css("font-size", "1.2em")
-												 .text("台灣網格讀取中...請勿點擊其他按鈕...");
-
-						d3.json("Data/json/twGrid.topo.json", function (twGrid){
-							// set progress bar
-							$("#progressBar div.bar").attr("style", "width:50%");
-							
-							// parse twGrid topojson
-							var twGrid = topo.parse(twGrid);
-						
-							// join wendy csv and user csv by siteName
-							var aqxCsv = csv.csvJoinCsv(airSite, aqx);
-							
-							// set progress bar
-							$("#progressBar div.bar").attr("style", "width:60%");
-							
-							// Define kriging variable
-							var t = [],
-								x = [],
-								y = [],
-								model = "exponential",
-								sigma2 = 0,
-								alpha = 100,
-								variogram;
-
-							// Extract kriging variable from aqx csv file
-							for(var i=0, max=aqxCsv.length; i<max; i+=1){
-								var lng = aqxCsv[i]["Lng"],
-									lat = aqxCsv[i]["Lat"],
-									value = aqxCsv[i]["PM2.5"];
-								x.push(lng);
-								y.push(lat);
-								t.push(value);
-							}
-
-							// kriging training predicted function
-							variogram = kriging.train(t, x, y, model, sigma2, alpha);					
-							
-							// set progress bar
-							$("#progressBar div.bar").attr("style", "width:70%").text("");
-							
-							// add kriging predicted value into twGrid
-							for(var i=0, max=twGrid.length; i<max; i+=1){
-								var newX = twGrid[i]["properties"]["Lng"],
-									newY = twGrid[i]["properties"]["Lat"];
-								
-								twGrid[i]["properties"]["PM2.5"] 
-									= kriging.predict(newX, newY, variogram);
-							}						
-							
-							// set progress bar
-							$("#progressBar div.bar").attr("style", "width:80%");
-							
-							// plot interpolation graph
-							wendy.topo.plotOnLeaflet(map, twGrid, "PM2.5", "PM2.5", 7, "RdYlGn", true);
-
-							// save svg graph
-							wendy.builtIn.kriging[svgName]
-								= d3.select(".leaflet-map-pane")
-									 .select(".leaflet-objects-pane")
-									 .select(".leaflet-overlay-pane")
-									 .select("svg.wendy[name='PM2.5']")
-									 .style("z-index", 1);
-
-							// set progress bar
-							$("#progressBar div.bar").attr("style", "width:100%");
-							$("#progressBar").fadeOut();
-
-						}); // End of twGrid topo json
-					}); // End of loading pm2.5 csv from epa open data
-				}); // End of loading air station csv				
-			}// End of svg is not exist
-			
-			// svg is exist
-			else{
-				// show svg
-				svg.style("opacity", 1)
-			   	   .style("pointer-events", null)
-			   	   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
-
-			   	// show legend
-				wendy.graph.showLegend();
-			}
+		// plot and save graph
+		var svgName = this.id;
+		var svg = wendy.builtIn.kriging[svgName];
 		
-		},// end of toggle on 
-		
-		// toggle off
-		function (){
-			var svgName = this.id;
-			var svg = wendy.builtIn.kriging[svgName];
-			
-			// hide svg
-			svg.style("opacity", 0)
-			   .style("pointer-events", "none")
-			   .style("z-index", 0);			
-		}
-	);
-
-	$("#temperature").toggle(
-		// toggle on
-		function (){
-			var svgName = this.id;
-			var svg = wendy.builtIn.kriging[svgName];	
-			if(svg === undefined){
-			// set progress bar			
+		if(svg === undefined){
+			// set progress bar
 			$("#progressBar").show();
-				$("#progressBar div.bar").attr("style", "width:20%")
+			$("#progressBar div.bar").attr("style", "width:10%");				
+			d3.csv("Data/csv/epa/EPA_AirStation.csv", function (airSite){				
+				
+				// set progress bar
+				$("#progressBar div.bar").attr("style", "width:30%")
 										 .css("color", "white")
 										 .css("font-size", "1.2em")
-										 .text("溫度資料讀取中...請勿點擊其他按鈕...");
+										 .text("環保署資料下載中...請勿點擊其他按鈕...");
 
-				// data source: http://opendata.cwb.gov.tw/about.htm
-				var url = wendy.getCloudUrl("http://opendata.cwb.gov.tw/opendata/DIV2/O-A0001-001.xml");
-				d3.xml(url, "application/xml", function (xml){				
+				// air quality data url
+				var aqxUrl="http://opendata.epa.gov.tw/ws/Data/AQX/?$orderby=SiteName&$skip=0&$top=1000&format=json";						
+				d3.json(wendy.getCloudUrl(aqxUrl), function (aqx){						
+					
 					// set progress bar
-					$("#progressBar div.bar").attr("style", "width:50%")
+					$("#progressBar div.bar").attr("style", "width:45%")
 											 .css("color", "white")
-										     .css("font-size", "1.2em")
-										     .text("網格讀取中...請勿點擊其他按鈕...");
+											 .css("font-size", "1.2em")
+											 .text("台灣網格讀取中...請勿點擊其他按鈕...");
 
 					d3.json("Data/json/twGrid.topo.json", function (twGrid){
-						// parse xml to json format object
-						var xmlDoc = $.xml2json(xml);
-						var xmlLocaltion = xmlDoc.location;
+						// set progress bar
+						$("#progressBar div.bar").attr("style", "width:50%");
 						
 						// parse twGrid topojson
 						var twGrid = topo.parse(twGrid);
-
+					
+						// join wendy csv and user csv by siteName
+						var aqxCsv = csv.csvJoinCsv(airSite, aqx);
+						
 						// set progress bar
-						$("#progressBar div.bar").attr("style", "width:60%").text("");
-
+						$("#progressBar div.bar").attr("style", "width:60%");
+						
 						// Define kriging variable
 						var t = [],
 							x = [],
@@ -418,80 +285,162 @@ $(function(){
 							alpha = 100,
 							variogram;
 
-						// Extract kriging variable from xml file
-						for(var i=0, maxSites=xmlLocaltion.length; i< maxSites; i+=1){
-							var lng = xmlLocaltion[i]["lon"],
-								lat = xmlLocaltion[i]["lat"],
-								temp = xmlLocaltion[i].weatherElement[3].elementValue["value"];
-							
+						// Extract kriging variable from aqx csv file
+						for(var i=0, max=aqxCsv.length; i<max; i+=1){
+							var lng = aqxCsv[i]["Lng"],
+								lat = aqxCsv[i]["Lat"],
+								value = aqxCsv[i]["PM2.5"];
 							x.push(lng);
 							y.push(lat);
-							t.push(temp);
-						}// End of for loop of xmlLocation
-						
+							t.push(value);
+						}
+
 						// kriging training predicted function
-						variogram = kriging.train(t, x, y, model, sigma2, alpha);
+						variogram = kriging.train(t, x, y, model, sigma2, alpha);					
 						
 						// set progress bar
 						$("#progressBar div.bar").attr("style", "width:70%").text("");
-
+						
 						// add kriging predicted value into twGrid
 						for(var i=0, max=twGrid.length; i<max; i+=1){
 							var newX = twGrid[i]["properties"]["Lng"],
 								newY = twGrid[i]["properties"]["Lat"];
 							
-							twGrid[i]["properties"]["temperature"] 
+							twGrid[i]["properties"]["PM2.5"] 
 								= kriging.predict(newX, newY, variogram);
-						}
+						}						
 						
 						// set progress bar
-						$("#progressBar div.bar").attr("style", "width:80%").text("");
-
+						$("#progressBar div.bar").attr("style", "width:80%");
+						
 						// plot interpolation graph
-						wendy.topo.plotOnLeaflet(map, twGrid, "temperature", "temperature", 7, "RdYlBu", true);
-
-						// set progress bar
-						$("#progressBar div.bar").attr("style", "width:90%").text("");
+						wendy.topo.plotOnLeaflet(map, twGrid, "PM2.5", "PM2.5", 7, "RdYlGn", true);
 
 						// save svg graph
 						wendy.builtIn.kriging[svgName]
 							= d3.select(".leaflet-map-pane")
 								 .select(".leaflet-objects-pane")
 								 .select(".leaflet-overlay-pane")
-								 .select("svg.wendy[name='temperature']")
+								 .select("svg.wendy[name='PM2.5']")
 								 .style("z-index", 1);
 
 						// set progress bar
 						$("#progressBar div.bar").attr("style", "width:100%");
 						$("#progressBar").fadeOut();
+
+					}); // End of twGrid topo json
+				}); // End of loading pm2.5 csv from epa open data
+			}); // End of loading air station csv		
+		}// End of svg is not exist
+
+		// svg is exist
+		else{
+			alert("【PM2.5】 已經存在，請點選【圖層清單】操控圖層");
+		}				
+	});
+
+	$("#temperature").on("click", function (){
+		// set button style
+			$(this).css("background-color", "gray")
+				   .css("color", "white")		;
+		
+		// plot and save graph  
+		var svgName = this.id;
+		var svg = wendy.builtIn.kriging[svgName];	
+		
+		if(svg === undefined){
+		// set progress bar			
+		$("#progressBar").show();
+			$("#progressBar div.bar").attr("style", "width:20%")
+									 .css("color", "white")
+									 .css("font-size", "1.2em")
+									 .text("溫度資料讀取中...請勿點擊其他按鈕...");
+
+			// data source: http://opendata.cwb.gov.tw/about.htm
+			var url = wendy.getCloudUrl("http://opendata.cwb.gov.tw/opendata/DIV2/O-A0001-001.xml");
+			d3.xml(url, "application/xml", function (xml){				
+				// set progress bar
+				$("#progressBar div.bar").attr("style", "width:50%")
+										 .css("color", "white")
+									     .css("font-size", "1.2em")
+									     .text("網格讀取中...請勿點擊其他按鈕...");
+
+				d3.json("Data/json/twGrid.topo.json", function (twGrid){
+					// parse xml to json format object
+					var xmlDoc = $.xml2json(xml);
+					var xmlLocaltion = xmlDoc.location;
 					
-					});// End of twGrid load
-				});// End of xml load
-			}// End of svg not exist
+					// parse twGrid topojson
+					var twGrid = topo.parse(twGrid);
 
-			// svg is exist
-			else{
-				// show svg
-				svg.style("opacity", 1)
-			   	   .style("pointer-events", null)
-			   	   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
+					// set progress bar
+					$("#progressBar div.bar").attr("style", "width:60%").text("");
 
-			   	// show legend
-				wendy.graph.showLegend();
-			}
-		},// End of toggle on button
+					// Define kriging variable
+					var t = [],
+						x = [],
+						y = [],
+						model = "exponential",
+						sigma2 = 0,
+						alpha = 100,
+						variogram;
 
-		// toggle off
-		function (){
-			var svgName = this.id;
-			var svg = wendy.builtIn.kriging[svgName];
-			
-			// hide svg
-			svg.style("opacity", 0)
-			   .style("pointer-events", "none")
-			   .style("z-index", 0);		
-		}
-	);
+					// Extract kriging variable from xml file
+					for(var i=0, maxSites=xmlLocaltion.length; i< maxSites; i+=1){
+						var lng = xmlLocaltion[i]["lon"],
+							lat = xmlLocaltion[i]["lat"],
+							temp = xmlLocaltion[i].weatherElement[3].elementValue["value"];
+						
+						x.push(lng);
+						y.push(lat);
+						t.push(temp);
+					}// End of for loop of xmlLocation
+					
+					// kriging training predicted function
+					variogram = kriging.train(t, x, y, model, sigma2, alpha);
+					
+					// set progress bar
+					$("#progressBar div.bar").attr("style", "width:70%").text("");
+
+					// add kriging predicted value into twGrid
+					for(var i=0, max=twGrid.length; i<max; i+=1){
+						var newX = twGrid[i]["properties"]["Lng"],
+							newY = twGrid[i]["properties"]["Lat"];
+						
+						twGrid[i]["properties"]["temperature"] 
+							= kriging.predict(newX, newY, variogram);
+					}
+					
+					// set progress bar
+					$("#progressBar div.bar").attr("style", "width:80%").text("");
+
+					// plot interpolation graph
+					wendy.topo.plotOnLeaflet(map, twGrid, "temperature", "temperature", 7, "RdYlBu", true);
+
+					// set progress bar
+					$("#progressBar div.bar").attr("style", "width:90%").text("");
+
+					// save svg graph
+					wendy.builtIn.kriging[svgName]
+						= d3.select(".leaflet-map-pane")
+							 .select(".leaflet-objects-pane")
+							 .select(".leaflet-overlay-pane")
+							 .select("svg.wendy[name='temperature']")
+							 .style("z-index", 1);
+
+					// set progress bar
+					$("#progressBar div.bar").attr("style", "width:100%");
+					$("#progressBar").fadeOut();
+				
+				});// End of twGrid load
+			});// End of xml load
+		}// End of svg not exist
+
+		// svg is exist
+		else{
+			alert("【" + svgName + "】已經存在，請點選【圖層清單】操控圖層");
+		}		
+	});
 
 	/***** UserPanel *****/
 	$("#UserPanel [data-graphType='choropleth']").on("click", "[data-graphName]", function(){		
@@ -506,16 +455,20 @@ $(function(){
 			svg.style("opacity", 0)
 			   .style("pointer-events", "none")
 			   .style("z-index", 0);
+
+			// show top svg legend
+			wendy.graph.showTopLegend();
 		
 		}else{
 			/// toggle on
 			$(this).css("background-color", "rgb(128, 128, 128)").css("color", "white");
+			
 			svg.style("opacity", 1)
 			   .style("pointer-events", null)
 			   .style("z-index", orderLayer[$(this).attr("data-graphName")] || 1);
-
-			// show legend
-			wendy.graph.showLegend();
+			
+			// show top svg legend
+			wendy.graph.showTopLegend();
 		}
 		
 	});
@@ -561,9 +514,11 @@ $(function(){
 		   .select(svgSelector)
 		   .style("z-index", z_index);
 
-		// show legend
-		wendy.graph.showLegend(svgName, svgClass);
+		// show top svg legend
+		wendy.graph.showTopLegend();
 
+		// hide z-index equal zero svg
+		wendy.graph.hideZeroZindexGraph();
 	});
 
 	$("#OrderLayerPanel > [data-dataType='graphList']").on("change", "input[type='text']", function (e){			
@@ -589,8 +544,11 @@ $(function(){
 		   .select(svgSelector)
 		   .style("z-index", z_index);
 
-		// show legend
-		wendy.graph.showLegend(svgName, svgClass);
+		// show top svg legend
+		wendy.graph.showTopLegend();
+
+		// hide z-index equal zero svg
+		wendy.graph.hideZeroZindexGraph();
 	});
 	
 	/***** AddTablePanel *****/
@@ -853,7 +811,7 @@ $(function(){
 		// remove exist vector fields
 		$("#ChoroplethPanel [data-dataType='topoField'] div[data-field]").remove();
 		
-		// storage plot Chopleth variaborle
+		// save plot Chopleth variaborle
 		var topoName = $(this).attr("data-file");	
 		choropleth.topoName = topoName;	
 		
@@ -862,13 +820,13 @@ $(function(){
 		
 		/// topo from wendy built-In
 		if(topoClass === "wendy"){		
-			// storage plot Choropleth variable
+			// save plot Choropleth variable
 			choropleth.isTopoFromWendy = true;
 			
 			// Create vector joined fields
 			var topoFields = wendy.builtIn.topoField[$(this).attr("data-file")];
 			
-			if(topoFields === undefined){			
+			if(topoFields === undefined){	
 				d3.json(wendy.topo.getTopoUrl(topoName), function (json){					
 					var topoFile   = topo.parse(json),
 						topoFields = Object.keys(topoFile[0].properties);				
@@ -941,14 +899,16 @@ $(function(){
 			.append("div")
 			.attr("class", "item")
 			.attr("data-field", tableFields[j])
-			.text(tableFields[j]);
+			.text(tableFields[j])
+			.style("color", "gray");
 
 			// output field options
 			d3.select("#ChoroplethPanel").select("[data-dataType='outputField']")
 			.append("div")
 			.attr("class", "item")
 			.attr("data-field", tableFields[j])
-			.text(tableFields[j]);	  				
+			.text(tableFields[j])
+			.style("color", "gray");	  				
 		}		
 	});
 
@@ -1033,8 +993,8 @@ $(function(){
 		
 		// check svg is exist or not
 		if(svg[0][0] !== null){
-			alert("您所選的資料以繪製完成,\n" +
-				  "請點選圖層清單進行確認!");
+			alert("您所選的資料已經繪製完成,\n" +
+				  "請點選【圖層清單】進行確認!");
 			return 0;
 		}
 
@@ -1071,13 +1031,13 @@ $(function(){
 											   .select(svgSelector)
 											   .style("z-index", 1);
 
-		// create button at UserPanel		
-		d3.select("#UserPanel [data-graphType='choropleth']")
-			.append("div").attr("class", "item")
-			.attr("data-graphName", newTopoName)
-			.text(newTopoName)
-			.style("background-color", "gray")
-			.style("color", "white");
+		// // create button at UserPanel		
+		// d3.select("#UserPanel [data-graphType='choropleth']")
+		// 	.append("div").attr("class", "item")
+		// 	.attr("data-graphName", newTopoName)
+		// 	.text(newTopoName)
+		// 	.style("background-color", "gray")
+		// 	.style("color", "white");
 
 		//set progress bar		
 		$("#progressBar div.bar").attr("style", "width:100%").text("");

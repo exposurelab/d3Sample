@@ -49,14 +49,14 @@
 	<div id="ToolMenu" class="row">		
 		<div class="col-md-12">
 			<div class="large left aligned ui icon header">				
-				<a id="ListLayer" class="ui large black label button">
-					<i class="list layout icon"></i>圖層清單
-				</a>
-				
 				<a id="OrderLayer" class="ui large black label button">
-					<i class="ordered list icon"></i>圖層排序
+					<i class="ordered list icon"></i>圖層清單
 				</a>
 
+				<a id="ListLayer" class="ui large black label button">
+					<i class="unordered list icon"></i>內建圖層
+				</a>
+				
 				<a id="AddTable" class="ui large black label button">
 					<i class="add sign box icon"></i>新增屬性
 				</a>
@@ -113,7 +113,7 @@
 					</div>
 				</div>
 
-				<div id="UserPanel" class="row">
+<!-- 				<div id="UserPanel" class="row">
 					<div class="ui small inverted teal block header LayerHeader">
 						使用者圖層
 					</div>
@@ -125,7 +125,7 @@
 						<div class="header"><i class="tags icon"></i>內插圖</div>
 						<div data-graphType="interpolation" class="ui fluid selection list"></div>	
 					</div>
-				</div>
+				</div> -->
 			</div>
 			
 			<div id="OrderLayerPanel" class="row">
@@ -216,7 +216,7 @@
 
 					<!-- Plot Choropleth Step-3 -->
 					<div class="header"><i class="setting icon"></i>
-						步驟3、 請選擇要合併的欄位 (縣市、鄉鎮名稱)
+						步驟3、 請選擇資料相同的欄位 (例如：縣市、鄉鎮名稱)
 					</div>	
 					<div class="ui fluid list">
 						<div class="header">

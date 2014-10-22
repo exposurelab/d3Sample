@@ -1396,7 +1396,42 @@
 		if(legend){	legend.remove();}
 	};
 
-	wendy.graph.showLegend = function(){
+	wendy.graph.hideZeroZindexGraph = function(){
+		// select all svg
+		var svgList = d3.select("#map")
+						.select(".leaflet-map-pane")
+						.select(".leaflet-objects-pane")
+						.select(".leaflet-overlay-pane")
+						.selectAll("svg");
+
+		// Except twBoundary, get svg z-index value and hide z-index zero SVG
+		svgList.each(function (d, i){			
+			// 1. Escape twBoundary
+			if(i===0){
+				return 0;
+			}
+			
+			// 2. get svg z-index value and hide z-index zero SVG
+			var svg = d3.select(this);
+			var zIndex = parseInt(svg.style("z-index"), 10);
+			
+			if(zIndex === 0){
+				// set svg graph style
+				svg.style("opacity", 0)
+			   	   .style("pointer-events", "none")
+			       .style("z-index", 0);			
+			
+			}else{
+				// set svg graph style
+				svg.style("opacity", 1)
+			       .style("pointer-events", null)
+			       .style("z-index", svg.style("z-index"));
+			}
+
+		});
+	}
+
+	wendy.graph.showTopLegend = function(){
 		// Define Containers
 		var   zIndexList = [],
 			svgNameList  = [],
@@ -1422,7 +1457,7 @@
 		// hide all legends
 		legendList.style("display", "none");
 
-		// Get svg z-value except twBoundary
+		// Except twBoundary, getting svg z-value &. svgName &. className from all svg graph
 		svgList.each(function (d, i){			
 			// Escape twBoundary
 			if(i===0){
@@ -1433,14 +1468,40 @@
 			var svg = $(this);
 			var svgName = svg.attr("name");
 			var svgClass = svg.attr("class");
-			var zIndex = svg.css("z-index");
+			var zIndex = parseInt(svg.css("z-index"), 10);
+			
 			svgNameList.push(svgName);
 			svgClassList.push(svgClass);
 			zIndexList.push(zIndex);
 		});
 
-		// get z-index Max position
-		var zIndexMax = d3.max(zIndexList);
+		// sorted z-index list descend
+		var _zIndexList = zIndexList.slice();
+		wendy.dataset.sort(_zIndexList);
+		
+		// Get z-index Max value
+		var zIndexMax = _zIndexList[_zIndexList.length-1],
+			zIndexMin = _zIndexList[0];
+
+		if(zIndexMax === 0){
+			// zIndexMax === zIndexMin
+			if(zIndexMax === zIndexMin){
+				return 0;
+			}
+			
+			// zIndexMax !== zIndexMin
+			else{
+				// point secondary top Number as zIndexMax
+				for(i=_zIndexList.length-2; i>=0; i-=1){
+					if(_zIndexList[i] !== _zIndexList[i+1]){
+						zIndexMax = _zIndexList[i];
+						break;
+					}
+				}
+			}		
+		}			
+		
+		// find z-index Max position	
 		var maxPos = zIndexList.indexOf(zIndexMax);
 		var maxPosList = [];
 		while(maxPos != -1){
@@ -1448,7 +1509,7 @@
 			maxPos = zIndexList.indexOf(zIndexMax, maxPos + 1);
 		}		
 		maxPos = maxPosList[maxPosList.length-1];
-		
+
 		// show maxPos legend
 		legendName = svgNameList[maxPos];
 		legendClass = svgClassList[maxPos];
@@ -1459,8 +1520,7 @@
 		  .select("div.leaflet-bottom.leaflet-right")
 		  .select(legendSelector)
 		  .style("display", "block");
-		
-	
+
 	}// End of wendy.graph.showLegend();
 
 }(window));
